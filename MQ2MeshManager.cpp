@@ -1168,7 +1168,7 @@ void MeshManagerMenu(const std::string& menu = "help")
 		}
 		for (int i = 0; i <= IgnoreList.size() - 1; ++i)
 		{
-			MeshWriteChat("\aw" + IgnoreList[i], false);
+			MeshWriteChat("\aw" + IgnoreList["Ignore", false);
 		}
 	}
 	if (menu == "set")
