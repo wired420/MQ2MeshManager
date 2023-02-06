@@ -1,4 +1,5 @@
 #pragma once
+#pragma comment(lib, "lib/libcurl.lib")
 #include <string>
 #include <filesystem>
 #include <mq/Plugin.h>
