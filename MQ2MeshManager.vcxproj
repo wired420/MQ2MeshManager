@@ -71,6 +71,9 @@
     <Link>
       <AdditionalDependencies Condition="'$(Configuration)|$(Platform)'=='Release|x64'">mq2main.lib;Ws2_32.lib;crypt32.lib;zlib.lib;libcurl.lib;cryptopp-static.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <Link>
+      <AdditionalDependencies Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">mq2main.lib;Ws2_32.lib;crypt32.lib;zlib.lib;libcurl.lib;cryptopp-static.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
   </ItemDefinitionGroup>
   <PropertyGroup>
     <_ProjectFileVersion>10.0.30319.1</_ProjectFileVersion>
