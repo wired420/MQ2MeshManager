@@ -1256,6 +1256,10 @@ PLUGIN_API void OnPulse() {
 					}
 				}
 			}
+			else 
+			{
+				HashThreadCount = 0;
+			}
 			if (!HashpipeList.empty())
 			{
 				HashListStorage tmp2;
@@ -1291,6 +1295,10 @@ PLUGIN_API void OnPulse() {
 						DownloadThreadCount = 0;
 					}
 				}
+			}
+			else
+			{
+				DownloadThreadCount = 0;
 			}
 			// Check if there is anything waiting to be downloaded.
 			if (!DownloadList.empty())
