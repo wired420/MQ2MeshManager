@@ -835,12 +835,8 @@ void MeshManagerUpdateAll(const char* Param2, const char* Param3) {
 				for (int i = 0; i <= MaxZone - 1; i++)
 				{
 					zn = Zones[i];
-					url = MeshDatabase[zn]["link"];
-					mn = zn + ".navmesh";
-
-					tmp.FileName = mn;
-					tmp.FileUrl = url;
-					MeshWriteChat("URL: " + url + " Filename: " + mn, false);
+					tmp.FileName = zn + ".navmesh";
+					tmp.FileUrl = MeshDatabase[zn]["link"];
 					DownloadList.push_back(tmp);
 				}
 				MeshWriteChat("\agAll files added to download manager.", false);
@@ -850,14 +846,11 @@ void MeshManagerUpdateAll(const char* Param2, const char* Param3) {
 			for (int i = 0; i <= MaxZone - 1; i++)
 			{
 				zn = Zones[i];
-				url = MeshDatabase[zn]["link"];
-				mn = zn + ".navmesh";
 				fs::path tp = fs::path(gPathResources) / "MQ2Nav" / mn;
-
 				//File doesn't exist? Go ahead and add it to the download list.
 				if (!fs::exists(tp, ec)) {
-					tmp.FileName = mn;
-					tmp.FileUrl = url;
+					tmp.FileName = zn + ".navmesh";
+					tmp.FileUrl = MeshDatabase[zn]["link"];
 					DownloadList.push_back(tmp);
 				}
 				else
@@ -865,8 +858,8 @@ void MeshManagerUpdateAll(const char* Param2, const char* Param3) {
 					// If file exists look up its hash and pass it to the hashing thread.
 					tmp2.HashType = "md5";
 					tmp2.FilePath = tp.string();
-					tmp2.FileName = mn;
-					tmp2.FileUrl = url;
+					tmp2.FileName = zn + ".navmesh";
+					tmp2.FileUrl = MeshDatabase[zn]["link"];
 					tmp2.RemoteHash = MeshDatabase[zn]["hash"];
 					HashpipeList.push_back(tmp2);
 					fHashReady = true;
