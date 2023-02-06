@@ -9,8 +9,9 @@ Getting started is very easy. Load the plugin. Confirm that you know it's going 
 ```txt
 1) /plugin MQ2MeshManager
 2) /mesh agree (follow further instructions on screen)
-3) Wait for it to report "Plugin Activated!" This can take up to 30 seconds. If accept in one window. All windows will get activated.
-4) /mesh help for more
+3) Wait for it to report "Plugin Activated!" This can take up to 30 seconds. If accepted in one window. All windows will get activated.
+4) /mesh updatedb
+5) /mesh help for more
 ```
 
 ### Commands
@@ -34,7 +35,6 @@ A list of available commands.
 /mesh set autoupdate <on/off/1/0/true/false>
 /mesh set progress <on/off/1/0/true/false>
 /mesh set threadsafety <on/off/1/0/true/false>
-/mesh set safetyseconds <seconds>
 ```
 
 ### Configuration File
