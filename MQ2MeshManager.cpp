@@ -227,12 +227,6 @@ bool is_number(const std::string& s)
 		s.end(), [](unsigned char c) { return !std::isdigit(c); }) == s.end();
 }
 
-unsigned short CharToShort(char* pchar)
-{
-	const unsigned short result = (pchar[0] << 8) | pchar[1];
-	return result;
-}
-
 /**
  * Chat function that won't spam you to death. When calling chat,
  * use true for plugin spam, use false for failure messages and
@@ -1220,7 +1214,7 @@ PLUGIN_API void SetGameState(int GameState)
 		if (InGameAndSpawned())
 		{
 			MeshManagerLoadSettings();
-			_init = true
+			_init = true;
 		}
 	}
 }
