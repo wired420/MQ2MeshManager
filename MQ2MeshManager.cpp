@@ -72,6 +72,7 @@ unsigned short fProgressDL = 0;
 bool fDownloading = false;
 std::list<DownloadListStorage> DownloadList;
 std::list<HashListStorage> HashpipeList;
+std::list<std::string> IgnoreList;
 bool fDownloadReady = false;
 bool fHashReady = false;
 unsigned short int HideProgress = 1;
@@ -88,6 +89,7 @@ std::error_code ec;
 std::stringstream jParse;
 json MeshDatabase = json::array();
 json SettingsDatabase = json::array();
+json IgnoreDatabase = json::array();
 
 /**
  * STRUCTURES
@@ -227,6 +229,15 @@ bool is_number(const std::string& s)
 {
 	return !s.empty() && std::find_if(s.begin(),
 		s.end(), [](unsigned char c) { return !std::isdigit(c); }) == s.end();
+}
+
+std::string tolower(const std::string& msg)
+{
+	std::string ch;
+	for (int i = 0; i < msg.length(); i++) {
+		ch += tolower(msg[i]);
+	}
+	return ch;
 }
 
 /**
@@ -530,6 +541,71 @@ void MeshManagerLoadSettings()
 }
 
 /**
+ * ZONE IGNORE
+ * 
+ * For when you have a custom mesh and don't want it to get overridden.
+ * 
+ */
+void MeshManagerSaveIgnores()
+{
+	const fs::path p = fs::path(gPathResources) / "MQ2MeshManager" / "ZoneIgnores.json";
+	FILE* jFile;
+	json tmp;
+	auto& settings = tmp["Ignore"];
+
+	for (auto i = IgnoreList.begin(); i != IgnoreList.end(); ++i)
+	{
+		settings[IgnoreList.front()];
+		IgnoreList.pop_front();
+	}
+
+	const errno_t err = fopen_s(&jFile, p.string().c_str(), "wb");
+	if (err == 0)
+	{
+		fputs(tmp.dump().c_str(), jFile);
+		fclose(jFile);
+	}
+	else
+	{
+		MeshWriteChat("\arError opening settings file for writing.", false);
+	}
+	MeshManagerLoadIgnores();
+}
+
+void MeshManagerLoadIgnores()
+{
+	const fs::path p = fs::path(gPathResources) / "MQ2MeshManager" / "ZoneIgnores.json";
+	FILE* jFile;
+
+	if (!fs::exists(p, ec))
+	{
+		return;
+	}
+	else
+	{
+		IgnoreDatabase.clear();
+		const errno_t err = fopen_s(&jFile, p.string().c_str(), "rb");
+		if (err == 0)
+		{
+			IgnoreDatabase = json::parse(jFile);
+			fclose(jFile);
+
+			auto& Ignore = IgnoreDatabase["Ignore"];
+
+			for (auto i = IgnoreDatabase.begin(); i != IgnoreDatabase.end(); ++i)
+			{
+				IgnoreList.push_back(i.key());
+				IgnoreDatabase.erase(i.key());
+			}
+		}
+		else
+		{
+			MeshWriteChat("\arError opening ignore file for reading.", false);
+		}
+	}
+}
+
+/**
  * COMMANDS
  *
  * Slash commands to operate plugin in game.
@@ -590,6 +666,51 @@ void MeshManager(SPAWNINFO* pChar, char* szLine)
 			else if (!_stricmp(Param1, "hash"))
 			{
 				MeshManagerDisplayHashes(Param2);
+			}
+			else if (!_stricmp(Param1, "ignore"))
+			{
+				std::string zonename = GetShortZone(pLocalPC->zoneId);
+				if (Param2 == NULL || Param2[0] == '\0' || !_stricmp(Param2, "list"))
+				{
+					MeshManagerMenu("ignorelist");
+				}
+				if (!_stricmp(Param2, "add"))
+				{
+					if (Param3 == NULL || Param3[0] == '\0')
+					{
+						IgnoreList.push_back(zonename);
+						MeshWriteChat("Added zone " + zonename + " to download ignore list.", false);
+						MeshManagerSaveIgnores();
+					}
+					else
+					{
+						if (Zones->find(tolower(Param3)))
+						{
+							IgnoreList.push_back(tolower(Param3));
+							MeshWriteChat("Added zone " + tolower(Param3) + " to download ignore list.", false);
+							MeshManagerSaveIgnores();
+						}
+					}
+				}
+				if (!_stricmp(Param2, "del") || !_stricmp(Param2, "delete") || 
+					!_stricmp(Param2, "rem") || !_stricmp(Param2, "remove"))
+				{
+					if (Param3 == NULL || Param3[0] == '\0')
+					{
+						IgnoreList.remove(zonename);
+						MeshWriteChat("Removed zone " + zonename + " from download ignore list.", false);
+						MeshManagerSaveIgnores();
+					}
+					else
+					{
+						if (Zones->find(tolower(Param3)))
+						{
+							IgnoreList.remove(tolower(Param3));
+							MeshWriteChat("Removed zone " + tolower(Param3) + " from download ignore list.", false);
+							MeshManagerSaveIgnores();
+						}
+					}
+				}
 			}
 			else if (!_stricmp(Param1, "settings"))
 			{
@@ -1021,11 +1142,33 @@ void MeshManagerMenu(const std::string& menu = "help")
 		MeshWriteChat("\a-t/mesh updatedb - Checks for updates to database.", false);
 		MeshWriteChat("\a-t/mesh updatezone [zone shortname] - Checks zone for updates. (Default: current)", false);
 		MeshWriteChat("\a-t/mesh updateall <confirm> [overwrite]- Checks all meshes for updates.", false);
+		MeshWriteChat("\a-t/mesh ignore <list|add|del> [zone shortname] - Marks Meshes to not ever download.", false);
 		MeshWriteChat("\a-t/mesh tlos - Lists available TLOs available.", false);
 		MeshWriteChat("\a-t/mesh hash [zone shortname] - Displays hashes for current or desinated zone.", false);
 		MeshWriteChat("\a-t/mesh set - Display settings menu.", false);
 		MeshWriteChat("\a-t/mesh settings - Display Current Settings", false);
 		MeshWriteChat("\a-t--------------------------------------------------", false);
+	}
+	if (menu == "ignorelist")
+	{
+		int cnt = 0;
+		std::list<std::string>::iterator it = IgnoreList.begin();
+		const fs::path p = fs::path(gPathResources) / "MQ2MeshManager" / "ZoneIgnores.json";
+		MeshWriteChat("\a-t-----------\aw Ignores\a-t ------------", false);
+		if (!fs::exists(p, ec))
+		{
+			MeshWriteChat("\arIgnore List Is Empty!", false);
+			return;
+		}
+		for (auto i = IgnoreList.begin(); i != IgnoreList.end(); ++i)
+		{
+			if (cnt != 0)
+			{
+				std::advance(it, 1);
+			}
+			cnt++;
+			MeshWriteChat("\aw" + *it, false);
+		}
 	}
 	if (menu == "set")
 	{
@@ -1207,6 +1350,7 @@ PLUGIN_API void SetGameState(int GameState)
 		if (InGameAndSpawned())
 		{
 			MeshManagerLoadSettings();
+			MeshManagerLoadIgnores();
 			_init = true;
 
 			if (AutoCheckForUpdates)
@@ -1313,7 +1457,18 @@ PLUGIN_API void OnPulse() {
 					int single = (DownloadList.size() > 1) ? false : true;
 					DownloadListStorage tmp;
 					tmp = DownloadList.front();
+					std::string fn = tmp.FileName.substr(0, tmp.FileName.length() - 8);
+					// DEBUG
+					MeshWriteChat(fn, false);
+					bool found = (std::find(IgnoreList.begin(), IgnoreList.end(), fn) != IgnoreList.end());
+					// DEBUG
+					std::string tf = (found) ? "true" : "false";
+					MeshWriteChat(tf, false);
 					DownloadList.pop_front();
+					if (found)
+					{
+						return;
+					}
 					DownloadThreads++;
 					std::thread download_obj(MeshDownloadFile, tmp.FileUrl, tmp.FileName, navPath.string(), single);
 					download_obj.detach();
