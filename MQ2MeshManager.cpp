@@ -82,6 +82,8 @@ bool ThreadSafe = true;
 int ThreadLockSeconds = 20;
 bool AutoDownloadMissing = false, AutoCheckForUpdates = false;
 bool _init = false;
+int MaxZone = 546;
+std::string Zones[546] = { "aalishai", "abysmal", "acrylia", "airplane", "akanon", "akheva", "akhevatwo", "alkabormare", "anguish", "arcstone", "arelis", "arena", "argath", "arginhiz", "arthicrex", "arxmentis", "ashengate", "atiiki", "barindu", "barren", "basilica", "bazaar", "beastdomain", "befallen", "beholder", "bertoxtemple", "bixiewarfront", "blackburrow", "blacksail", "bloodfalls", "bloodfields", "bloodmoon", "bothunder", "breedinggrounds", "brellsarena", "brellsrest", "brellstemple", "broodlands", "brotherisland", "buriedsea", "burningwood", "butcher", "cabeast", "cabwest", "cauldron", "causeway", "cazicthule", "chamberoftears", "chambersa", "chambersb", "chambersc", "chambersd", "chamberse", "chambersf", "chapterhouse", "charasisb", "charasis", "charasistwo", "chardokb", "chardok", "chardoktwo", "chelsithreborn", "citymist", "cityofbronze", "cobaltscar", "cobaltscartwo", "codecayb", "codecay", "commonlands", "convorteum", "coolingchamber", "corathusa", "corathusb", "corathus", "cosul", "crescent", "crushbone", "cryptofshade", "crystallos", "crystal", "crystalshard", "crystaltwoa", "crystaltwob", "dalnir", "darklightcaverns", "dawnshroud", "deadbone", "deadhills", "deepshade", "degmar", "delvea", "delveb", "devastationa", "devastation", "direwind", "discord", "discordtower", "drachnidhivea", "drachnidhiveb", "drachnidhivec", "drachnidhive", "dragoncrypt", "dragonscalea", "dragonscaleb", "dragonscale", "dranikcatacombsa", "dranikcatacombsb", "dranikcatacombsc", "dranikhollowsa", "dranikhollowsb", "dranikhollowsc", "dranik", "draniksewersa", "draniksewersb", "draniksewersc", "draniksscar", "dreadlands", "dreadspire", "dredge", "drogab", "droga", "dulak", "eastkarana", "eastkorlacha", "eastkorlach", "eastsepulcher", "eastwastes", "eastwastesshard", "eastwastestwo", "echo", "elddara", "elddar", "emeraldjungle", "empyr", "endlesscaverns", "erudnext", "erudnint", "erudsxing", "esianti", "ethernere", "everfrost", "eviltree", "exaltedb", "exalted", "fallen", "fearplane", "feerrott2", "feerrott", "felwithea", "felwitheb", "ferubi", "fhalls", "fieldofbone", "firefallpass", "firiona", "foundation", "freeportacademy", "freeportarena", "freeportcityhall", "freeporteast", "freeporthall", "freeportmilitia", "freeportsewers", "freeporttheater", "freeportwest", "freporte", "freportn", "freportw", "frontiermtnsb", "frontiermtns", "frostcrypt", "frozenshadow", "frozenshadowtwo", "fungalforest", "fungusgrove", "gfaydark", "gnomemtn", "gorowyn", "greatdivide", "greatdividetwo", "grelleth", "griegsend", "grimling", "grobb", "growthplane", "guardian", "guildhall3", "guildhalllrg", "guildhall", "guildhallsml", "guildlobby", "guka", "gukb", "gukbottom", "gukc", "gukd", "guke", "gukf", "gukg", "gukh", "guktop", "gunthak", "gyrospireb", "gyrospirez", "halas", "harbingers", "hateplaneb", "hateplane", "hatesfury", "heartoffearb", "heartoffearc", "heartoffear", "highkeep", "highpasshold", "hillsofshade", "hohonora", "hohonorb", "hole", "hollowshade", "hollowshadetwo", "housegarden", "iceclad", "icefall", "ikkinz", "illsalina", "illsalinb", "illsalinc", "illsalin", "inktuta", "innothuleb", "jaggedpine", "jardelshook", "kael", "kaelshard", "kaeltwo", "kaesora", "kaladima", "kaladimb", "karnor", "kattacastrumb", "kattacastrum", "katta", "kedge", "kithicor", "kodtaz", "korascian", "korshaext", "korshaint", "kurn", "lakeofillomen", "lakerathe", "lavastorm", "lceanium", "letalis", "lfaydark", "lichencreep", "lopingplains", "maidenhouseint", "maiden", "maidensgrave", "maidentwo", "mansion", "mearatas", "mechanotus", "mesa", "miragulmare", "mira", "mirb", "mirc", "mird", "mire", "mirf", "mirg", "mirh", "miri", "mirj", "mischiefplane", "mistmoore", "mistythicket", "mmca", "mmcb", "mmcc", "mmcd", "mmce", "mmcf", "mmcg", "mmch", "mmci", "mmcj", "monkeyrock", "moors", "morellcastle", "mseru", "nadox", "najena", "natimbi", "necropolis", "necropolistwo", "nedaria", "neighborhood", "nektulosa", "nektulos", "neriaka", "neriakb", "neriakc", "neriakd", "netherbian", "nexus", "nightmareb", "northkarana", "northro", "nro", "nurga", "oceangreenhills", "oceangreenvillage", "oceanoftears", "oggok", "oldblackburrow", "oldbloodfield", "oldcommons", "olddranik", "oldfieldofboneb", "oldfieldofbone", "oldkaesoraa", "oldkaesorab", "oldkithicor", "oldkurn", "overthere", "overtheretwo", "paineel", "paludal", "paludaltwo", "paw", "pellucid", "permafrost", "phinteriortree", "phylactery", "pillarsalra", "plhdkeinteriors1a1", "plhdkeinteriors1a2", "plhdkeinteriors1a3", "plhdkeinteriors3a1", "plhdkeinteriors3a2", "plhdkeinteriors3a3", "plhogrinteriors1a1", "plhogrinteriors1a2", "plhogrinteriors3a1", "plhogrinteriors3a2", "plhogrinteriors3b1", "plhogrinteriors3b2", "poair", "podisease", "poeartha", "poearthb", "pofire", "pohealth", "poinnovation", "pojustice", "poknowledge", "ponightmare", "poshadow", "postorms", "potactics", "potimea", "potimeb", "potorment", "potranquility", "povalor", "powar", "powater", "precipiceofwar", "provinggrounds", "qcat", "qey2hh1", "qeynos2", "qeynos", "qeytoqrg", "qinimi", "qrg", "qvic", "ragea", "rage", "rathechamber", "rathemtn", "redfeather", "relic", "resplendent", "riftseekers", "rivervale", "riwwi", "roost", "rubak", "ruja", "rujb", "rujc", "rujd", "ruje", "rujf", "rujg", "rujh", "ruji", "rujj", "runnyeye", "sarithcity", "scarlet", "scorchedwoods", "sebilis", "sepulcher", "shadeweaver", "shadeweavertwo", "shadowedmount", "shadowhaven", "shadowhaventwo", "shadowrest", "shadowspine", "shadowvalley", "shardslanding", "sharvahl", "sharvahltwo", "shiningcity", "shipmvm", "shipmvp", "shipmvu", "shippvu", "shipuvu", "shipworkshop", "silyssar", "sirens", "skyfire", "skyfiretwo", "skylance", "skyshrine", "skyshrinetwo", "sleeper", "sleepertwo", "sncrematory", "snlair", "snplant", "snpool", "soldunga", "soldungb", "soldungc", "solrotower", "soltemple", "solteris", "somnium", "southkarana", "southro", "sseru", "ssratemple", "steamfactory", "steamfontmts", "steppes", "stillmoona", "stillmoonb", "stonebrunt", "stonehive", "stonesnake", "stratos", "suncrest", "sunderock", "swampofnohope", "tacvi", "taka", "takb", "takc", "takd", "take", "takf", "takg", "takh", "taki", "takishruinsa", "takishruins", "takj", "tempesttemple", "templeveeshan", "templeveeshantwo", "tenebrous", "thalassius", "theatera", "theater", "thedeep", "thegrey", "thenest", "thevoida", "thevoidb", "thevoidc", "thevoidd", "thevoide", "thevoidf", "thevoidg", "thevoidh", "thuledream", "thulehouse1", "thulehouse2", "thulelibrary", "thuliasaur", "thundercrest", "thurgadina", "thurgadinb", "timorous", "tipt", "torgiran", "toskirakk", "towerofrot", "toxxulia", "trakanon", "trialsofsmoke", "tutoriala", "tutorialb", "twilight", "txevu", "umbral", "umbraltwo", "underquarry", "unrest", "uqua", "valdeholm", "veeshan", "veeshantwo", "veksar", "velketor", "velketortwo", "vergalid", "vexthal", "vexthaltwo", "vxed", "wakening", "wallofslaughter", "warrens", "warslikswood", "weddingchapeldark", "weddingchapel", "well", "westkorlacha", "westkorlachb", "westkorlachc", "westkorlach", "westsepulcher", "westwastes", "westwastestwo", "windsong", "xorbb", "yxtta", "zhisza" };
 std::error_code ec;
 std::stringstream jParse;
 json MeshDatabase = json::array();
@@ -823,7 +825,6 @@ void MeshManagerUpdateAll(const char* Param2, const char* Param3) {
 	DownloadListStorage tmp;
 	HashListStorage tmp2;
 	std::string mn, zn, md5, fmd5, url;
-	EQZoneInfo* zd = nullptr;
 
 	if (!fDownloadReady)
 	{
@@ -831,25 +832,24 @@ void MeshManagerUpdateAll(const char* Param2, const char* Param3) {
 		{
 			if (!_stricmp(Param3, "overwrite"))
 			{
-				for (int i = 0; i <= MAX_ZONES - 1; i++)
+				for (int i = 0; i <= MaxZone - 1; i++)
 				{
-					zd = pWorldData->ZoneArray[i];
-					zn = zd->ShortName;
+					zn = Zones[i];
 					url = MeshDatabase[zn]["link"];
 					mn = zn + ".navmesh";
 
 					tmp.FileName = mn;
 					tmp.FileUrl = url;
+					MeshWriteChat("URL: " + url + " Filename: " + mn, false);
 					DownloadList.push_back(tmp);
 				}
 				MeshWriteChat("\agAll files added to download manager.", false);
 				fDownloadReady = true;
 				return;
 			}
-			for (int i = 0; i <= MAX_ZONES - 1; i++)
+			for (int i = 0; i <= MaxZone - 1; i++)
 			{
-				zd = pWorldData->ZoneArray[i];
-				zn = zd->ShortName;
+				zn = Zones[i];
 				url = MeshDatabase[zn]["link"];
 				mn = zn + ".navmesh";
 				fs::path tp = fs::path(gPathResources) / "MQ2Nav" / mn;
