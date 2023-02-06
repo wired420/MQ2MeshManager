@@ -1208,6 +1208,11 @@ PLUGIN_API void SetGameState(int GameState)
 		{
 			MeshManagerLoadSettings();
 			_init = true;
+
+			if (AutoCheckForUpdates)
+			{
+				DoCommand(nullptr, "/mesh updateall confirm");
+			}
 		}
 	}
 }
@@ -1340,7 +1345,8 @@ PLUGIN_API void OnZoned()
 		fs::path p = fs::path(gPathResources) / "MQ2Nav" / fn;
 		if (!fs::exists(p, ec))
 		{
-			DoCommand(nullptr, "/mesh updatezone");
+			std::string cmd = "/mesh updatezone " + std::string(GetShortZone(pLocalPC->zoneId));
+			DoCommand(nullptr, cmd.c_str());
 		}
 	}
 }
