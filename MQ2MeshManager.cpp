@@ -1,18 +1,18 @@
- /**
-  * TODO LIST (Overall)
-  *
-  * + MAKE A UI!
-  *
-  * + Build an ignore list. Meshes you don't want over written. Make it for all characters.
-  *
-  */
+/**
+ * TODO LIST (Overall)
+ *
+ * + MAKE A UI!
+ *
+ * + Build an ignore list. Meshes you don't want over written. Make it for all characters.
+ *
+ */
 #define CRYPTOPP_ENABLE_NAMESPACE_WEAK 1
-  // MQ2MeshManager.cpp : Defines the entry point for the DLL application.
-  //
+ // MQ2MeshManager.cpp : Defines the entry point for the DLL application.
+ //
 
-  // PLUGIN_API is only to be used for callbacks.  All existing callbacks at this time
-  // are shown below. Remove the ones your plugin does not use.  Always use Initialize
-  // and Shutdown for setup and cleanup.
+ // PLUGIN_API is only to be used for callbacks.  All existing callbacks at this time
+ // are shown below. Remove the ones your plugin does not use.  Always use Initialize
+ // and Shutdown for setup and cleanup.
 #include <bitset>
 #include <filesystem>
 #include <fstream>
@@ -81,6 +81,7 @@ unsigned short HashThreads = 0, MaxHashThreads = 4;
 bool ThreadSafe = true;
 int ThreadLockSeconds = 20;
 bool AutoDownloadMissing = false, AutoCheckForUpdates = false;
+bool _init = false;
 std::error_code ec;
 std::stringstream jParse;
 json MeshDatabase = json::array();
@@ -476,12 +477,11 @@ void MeshManagerSaveSettings()
 	FILE* jFile;
 	json tmp;
 	auto& settings = tmp["Settings"];
-
 	settings["MaxDownloads"] = MaxDownloadThreads;
 	settings["MaxHashes"] = MaxHashThreads;
 	settings["DownloadMissing"] = AutoDownloadMissing;
 	settings["AutoUpdate"] = AutoCheckForUpdates;
-	settings]["ProgressMeter"] = HideProgress;
+	settings["ProgressMeter"] = HideProgress;
 	settings["ThreadSafety"] = ThreadSafe;
 
 	const errno_t err = fopen_s(&jFile, f.string().c_str(), "wb");
@@ -502,7 +502,7 @@ void MeshManagerLoadSettings()
 	const std::string FileName = fmt::format("{}_{}.json", pEverQuestInfo->WorldServerShortname, pLocalPC->Name);
 	const fs::path f = fs::path(gPathResources) / "MQ2MeshManager" / FileName;
 	FILE* jFile;
-	auto& settings = SettingsDatabase["Settings"];
+
 	if (!fs::exists(f, ec))
 	{
 		MeshWriteChat("\arSettings File Doesn't Exist. Loading Default Settings.", false);
@@ -516,6 +516,8 @@ void MeshManagerLoadSettings()
 		{
 			SettingsDatabase = json::parse(jFile);
 			fclose(jFile);
+
+			auto& settings = SettingsDatabase["Settings"];
 
 			MaxDownloadThreads = settings["MaxDownloads"];
 			MaxHashThreads = settings["MaxHashes"];
@@ -1071,13 +1073,11 @@ void MeshManagerMenu(const std::string& menu = "help")
 	{
 		char buf[4] = { 0 };
 		std::string tmp = (fDownloading) ? "true" : "false";
-		errno_t pd = _itoa_s(fProgressDL, buf, 3);
-
 		MeshWriteChat("\a-t---------------\at TLOs \a-t---------------", false);
 		MeshWriteChat("\at${\a-tMeshManager\at.\a-tisDownloading\at}\ag:\aw " + tmp, false);
 		MeshWriteChat("\at${\a-tMeshManager\at.\a-tDownloadCurrent\at}\ag:\aw " + fCurrentDL, false);
 		MeshWriteChat("\at${\a-tMeshManager\at.\a-tDownloadLast\at}\ag:\aw " + fLastDL, false);
-		MeshWriteChat("\at${\a-tMeshManager\at.\a-tDownloadProgress\at}\ag:\aw " + std::string(buf + '\0'), false);
+		MeshWriteChat("\at${\a-tMeshManager\at.\a-tDownloadProgress\at}\ag:\aw " + std::to_string(fProgressDL), false);
 		MeshWriteChat("\at${\a-tMeshManager\at.\a-tDownloadPath\at}\ag:\aw " + fPathDL, false);
 	}
 }
@@ -1111,8 +1111,6 @@ void MeshUpdateDatabase() {
 PLUGIN_API void InitializePlugin() {
 	char fMsg[256] = { 0 };
 	fs::path fPath;
-
-	MeshManagerLoadSettings();
 
 	/* Our folder */
 	fPath = fs::path(gPathResources) / "MQ2MeshManager";
@@ -1217,7 +1215,14 @@ PLUGIN_API void OnReloadUI()
  */
 PLUGIN_API void SetGameState(int GameState)
 {
-	// DebugSpewAlways("MQ2MeshManager::SetGameState(%d)", GameState);
+	if (!_init)
+	{
+		if (InGameAndSpawned())
+		{
+			MeshManagerLoadSettings();
+			_init = true
+		}
+	}
 }
 
 
@@ -1231,7 +1236,7 @@ PLUGIN_API void SetGameState(int GameState)
  * this section is executed.
  */
 PLUGIN_API void OnPulse() {
-	if (!fAgree)
+	if (!fAgree) 
 	{
 		if (std::chrono::steady_clock::now() > PulseTimer)
 		{
@@ -1334,7 +1339,15 @@ PLUGIN_API void OnPulse() {
  */
 PLUGIN_API void OnZoned()
 {
-	// DebugSpewAlways("MQ2MeshManager::OnZoned()");
+	if (AutoDownloadMissing)
+	{
+		std::string fn = std::string(GetShortZone(pLocalPC->zoneId)) + ".navmesh";
+		fs::path p = fs::path(gPathResources) / "MQ2Nav" / fn;
+		if (!fs::exists(p, ec))
+		{
+			DoCommand(nullptr, "/mesh updatezone");
+		}
+	}
 }
 
 /**
@@ -1365,38 +1378,4 @@ PLUGIN_API void OnUpdateImGui()
 			}
 		}
 	*/
-}
-
-/**
- * @fn OnLoadPlugin
- *
- * This is called each time a plugin is loaded (ex: /plugin someplugin), after the
- * plugin has been loaded and any associated -AutoExec.cfg file has been launched.
- * This means it will be executed after the plugin's @ref InitializePlugin callback.
- *
- * This is also called when THIS plugin is loaded, but initialization tasks should
- * still be done in @ref InitializePlugin.
- *
- * @param Name const char* - The name of the plugin that was loaded
- */
-PLUGIN_API void OnLoadPlugin(const char* Name)
-{
-	// DebugSpewAlways("MQ2MeshManager::OnLoadPlugin(%s)", Name);
-}
-
-/**
- * @fn OnUnloadPlugin
- *
- * This is called each time a plugin is unloaded (ex: /plugin someplugin unload),
- * just prior to the plugin unloading.  This means it will be executed prior to that
- * plugin's @ref ShutdownPlugin callback.
- *
- * This is also called when THIS plugin is unloaded, but shutdown tasks should still
- * be done in @ref ShutdownPlugin.
- *
- * @param Name const char* - The name of the plugin that is to be unloaded
- */
-PLUGIN_API void OnUnloadPlugin(const char* Name)
-{
-	// DebugSpewAlways("MQ2MeshManager::OnUnloadPlugin(%s)", Name);
 }
