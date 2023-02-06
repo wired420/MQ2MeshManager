@@ -475,13 +475,14 @@ void MeshManagerSaveSettings()
 	const fs::path f = fs::path(gPathResources) / "MQ2MeshManager" / FileName;
 	FILE* jFile;
 	json tmp;
+	auto& settings = tmp["Settings"];
 
-	tmp["Settings"]["MaxDownloads"] = MaxDownloadThreads;
-	tmp["Settings"]["MaxHashes"] = MaxHashThreads;
-	tmp["Settings"]["DownloadMissing"] = AutoDownloadMissing;
-	tmp["Settings"]["AutoUpdate"] = AutoCheckForUpdates;
-	tmp["Settings"]["ProgressMeter"] = HideProgress;
-	tmp["Settings"]["ThreadSafety"] = ThreadSafe;
+	settings["MaxDownloads"] = MaxDownloadThreads;
+	settings["MaxHashes"] = MaxHashThreads;
+	settings["DownloadMissing"] = AutoDownloadMissing;
+	settings["AutoUpdate"] = AutoCheckForUpdates;
+	settings]["ProgressMeter"] = HideProgress;
+	settings["ThreadSafety"] = ThreadSafe;
 
 	const errno_t err = fopen_s(&jFile, f.string().c_str(), "wb");
 	if (err == 0)
@@ -500,6 +501,8 @@ void MeshManagerLoadSettings()
 {
 	const std::string FileName = fmt::format("{}_{}.json", pEverQuestInfo->WorldServerShortname, pLocalPC->Name);
 	const fs::path f = fs::path(gPathResources) / "MQ2MeshManager" / FileName;
+	FILE* jFile;
+	auto& settings = SettingsDatabase["Settings"];
 	if (!fs::exists(f, ec))
 	{
 		MeshWriteChat("\arSettings File Doesn't Exist. Loading Default Settings.", false);
@@ -507,8 +510,6 @@ void MeshManagerLoadSettings()
 	}
 	else
 	{
-		FILE* jFile;
-
 		SettingsDatabase.clear();
 		const errno_t err = fopen_s(&jFile, f.string().c_str(), "rb");
 		if (err == 0)
@@ -516,12 +517,12 @@ void MeshManagerLoadSettings()
 			SettingsDatabase = json::parse(jFile);
 			fclose(jFile);
 
-			MaxDownloadThreads = SettingsDatabase["Settings"]["MaxDownloads"];
-			MaxHashThreads = SettingsDatabase["Settings"]["MaxHashes"];
-			AutoDownloadMissing = SettingsDatabase["Settings"]["DownloadMissing"];
-			AutoCheckForUpdates = SettingsDatabase["Settings"]["AutoUpdate"];
-			HideProgress = SettingsDatabase["Settings"]["ProgressMeter"];
-			ThreadSafe = SettingsDatabase["Settings"]["ThreadSafety"];
+			MaxDownloadThreads = settings["MaxDownloads"];
+			MaxHashThreads = settings["MaxHashes"];
+			AutoDownloadMissing = settings["DownloadMissing"];
+			AutoCheckForUpdates = settings["AutoUpdate"];
+			HideProgress = settings["ProgressMeter"];
+			ThreadSafe = settings["ThreadSafety"];
 		}
 		else
 		{
