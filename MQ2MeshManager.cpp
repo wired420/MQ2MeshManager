@@ -72,7 +72,7 @@ unsigned short fProgressDL = 0;
 bool fDownloading = false;
 std::list<DownloadListStorage> DownloadList;
 std::list<HashListStorage> HashpipeList;
-std::list<std::string> IgnoreList;
+std::vector<std::string> IgnoreList;
 bool fDownloadReady = false;
 bool fHashReady = false;
 unsigned short int HideProgress = 1;
@@ -553,10 +553,9 @@ void MeshManagerSaveIgnores()
 	json tmp;
 	auto& settings = tmp["Ignore"];
 
-	for (auto i = IgnoreList.begin(); i != IgnoreList.end(); ++i)
+	for (int i = 0; i <= IgnoreList.size() - 1; i++)
 	{
-		settings[IgnoreList.front()];
-		IgnoreList.pop_front();
+		settings[IgnoreList[i]];
 	}
 
 	const errno_t err = fopen_s(&jFile, p.string().c_str(), "wb");
@@ -569,7 +568,6 @@ void MeshManagerSaveIgnores()
 	{
 		MeshWriteChat("\arError opening settings file for writing.", false);
 	}
-	MeshManagerLoadIgnores();
 }
 
 void MeshManagerLoadIgnores()
@@ -595,7 +593,6 @@ void MeshManagerLoadIgnores()
 			for (auto i = IgnoreDatabase.begin(); i != IgnoreDatabase.end(); ++i)
 			{
 				IgnoreList.push_back(i.key());
-				IgnoreDatabase.erase(i.key());
 			}
 		}
 		else
@@ -679,7 +676,7 @@ void MeshManager(SPAWNINFO* pChar, char* szLine)
 					if (Param3 == NULL || Param3[0] == '\0')
 					{
 						IgnoreList.push_back(zonename);
-						MeshWriteChat("Added zone " + zonename + " to download ignore list.", false);
+						MeshWriteChat("\a-tAdded zone\ag " + zonename + " \a-tto download ignore list.", false);
 						MeshManagerSaveIgnores();
 					}
 					else
@@ -687,7 +684,7 @@ void MeshManager(SPAWNINFO* pChar, char* szLine)
 						if (Zones->find(tolower(Param3)))
 						{
 							IgnoreList.push_back(tolower(Param3));
-							MeshWriteChat("Added zone " + tolower(Param3) + " to download ignore list.", false);
+							MeshWriteChat("\a-tAdded zone\ag " + tolower(Param3) + " \a-tto download ignore list.", false);
 							MeshManagerSaveIgnores();
 						}
 					}
@@ -697,19 +694,29 @@ void MeshManager(SPAWNINFO* pChar, char* szLine)
 				{
 					if (Param3 == NULL || Param3[0] == '\0')
 					{
-						IgnoreList.remove(zonename);
-						MeshWriteChat("Removed zone " + zonename + " from download ignore list.", false);
-						MeshManagerSaveIgnores();
+						for (int i = 0; i <= (int)IgnoreList.size(); i++)
+						{
+							if (IgnoreList[i] == zonename)
+							{
+								IgnoreList.erase(std::next(IgnoreList.begin(), i));
+								MeshWriteChat("\a-tRemoved zone\ar " + zonename + " \a-tfrom download ignore list.", false);
+								MeshManagerSaveIgnores();
+								return;
+							}
+						}
 					}
 					else
 					{
 						if (Zones->find(tolower(Param3)))
 						{
-							IgnoreList.remove(tolower(Param3));
-							MeshWriteChat("Removed zone " + tolower(Param3) + " from download ignore list.", false);
+							std::vector<std::string>::iterator position = std::find(IgnoreList.begin(), IgnoreList.end(), std::string(tolower(Param3)));
+							IgnoreList.erase(position);
+							MeshWriteChat("\a-tRemoved zone\ar " + tolower(Param3) + " \a-tfrom download ignore list.", false);
 							MeshManagerSaveIgnores();
+							return;
 						}
 					}
+					MeshWriteChat("\ar" + zonename + " \a-tnot found in list!", false);
 				}
 			}
 			else if (!_stricmp(Param1, "settings"))
@@ -1152,22 +1159,16 @@ void MeshManagerMenu(const std::string& menu = "help")
 	if (menu == "ignorelist")
 	{
 		int cnt = 0;
-		std::list<std::string>::iterator it = IgnoreList.begin();
 		const fs::path p = fs::path(gPathResources) / "MQ2MeshManager" / "ZoneIgnores.json";
 		MeshWriteChat("\a-t-----------\aw Ignores\a-t ------------", false);
-		if (!fs::exists(p, ec))
+		if (!fs::exists(p, ec) || fs::is_empty(p, ec))
 		{
 			MeshWriteChat("\arIgnore List Is Empty!", false);
 			return;
 		}
-		for (auto i = IgnoreList.begin(); i != IgnoreList.end(); ++i)
+		for (int i = 0; i <= IgnoreList.size() - 1; ++i)
 		{
-			if (cnt != 0)
-			{
-				std::advance(it, 1);
-			}
-			cnt++;
-			MeshWriteChat("\aw" + *it, false);
+			MeshWriteChat("\aw" + IgnoreList[i], false);
 		}
 	}
 	if (menu == "set")
