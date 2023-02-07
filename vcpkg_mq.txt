@@ -1,4 +1,4 @@
-curl
-zlib
 cryptopp
+curl
 nlohmann-json
+zlib
