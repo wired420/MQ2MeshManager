@@ -543,7 +543,7 @@ void MeshManagerLoadSettings()
 /**
  * ZONE IGNORE
  * 
- * For when you have a custom mesh and don't want it to get overridden.
+ * For when you have a custom mesh and don't want it to get nuked by the updater.
  * 
  */
 void MeshManagerSaveIgnores()
@@ -551,11 +551,10 @@ void MeshManagerSaveIgnores()
 	const fs::path p = fs::path(gPathResources) / "MQ2MeshManager" / "ZoneIgnores.json";
 	FILE* jFile;
 	json tmp;
-	auto& settings = tmp["Ignore"];
 
 	for (int i = 0; i <= IgnoreList.size() - 1; i++)
 	{
-		settings[IgnoreList[i]];
+		tmp[IgnoreList[i]] = true;
 	}
 
 	const errno_t err = fopen_s(&jFile, p.string().c_str(), "wb");
@@ -587,8 +586,6 @@ void MeshManagerLoadIgnores()
 		{
 			IgnoreDatabase = json::parse(jFile);
 			fclose(jFile);
-
-			auto& Ignore = IgnoreDatabase["Ignore"];
 
 			for (auto i = IgnoreDatabase.begin(); i != IgnoreDatabase.end(); ++i)
 			{
@@ -1168,7 +1165,7 @@ void MeshManagerMenu(const std::string& menu = "help")
 		}
 		for (int i = 0; i <= IgnoreList.size() - 1; ++i)
 		{
-			MeshWriteChat("\aw" + IgnoreList["Ignore", false);
+			MeshWriteChat("\aw" + IgnoreList[i], false);
 		}
 	}
 	if (menu == "set")
@@ -1459,12 +1456,7 @@ PLUGIN_API void OnPulse() {
 					DownloadListStorage tmp;
 					tmp = DownloadList.front();
 					std::string fn = tmp.FileName.substr(0, tmp.FileName.length() - 8);
-					// DEBUG
-					MeshWriteChat(fn, false);
 					bool found = (std::find(IgnoreList.begin(), IgnoreList.end(), fn) != IgnoreList.end());
-					// DEBUG
-					std::string tf = (found) ? "true" : "false";
-					MeshWriteChat(tf, false);
 					DownloadList.pop_front();
 					if (found)
 					{
@@ -1498,11 +1490,15 @@ PLUGIN_API void OnZoned()
 	if (AutoDownloadMissing)
 	{
 		std::string fn = std::string(GetShortZone(pLocalPC->zoneId)) + ".navmesh";
-		fs::path p = fs::path(gPathResources) / "MQ2Nav" / fn;
-		if (!fs::exists(p, ec))
-		{
-			std::string cmd = "/mesh updatezone " + std::string(GetShortZone(pLocalPC->zoneId));
-			DoCommand(nullptr, cmd.c_str());
+		std::string search = fn.substr(0, fn.length() - 8);
+		bool found = (std::find(IgnoreList.begin(), IgnoreList.end(), search) != IgnoreList.end());
+		if (!found) {
+			fs::path p = fs::path(gPathResources) / "MQ2Nav" / fn;
+			if (!fs::exists(p, ec))
+			{
+				std::string cmd = "/mesh updatezone " + std::string(GetShortZone(pLocalPC->zoneId));
+				DoCommand(nullptr, cmd.c_str());
+			}
 		}
 	}
 }
