@@ -317,7 +317,7 @@ int Curl_Progress_Report(void* ptr, double TotalToDownload, double NowDownloaded
 		return 0;
 	}
 	int progress = (int)round(NowDownloaded * 100 / TotalToDownload);
-	MeshWriteChat(fmt::format("{} {}{} {} {} {} {}", "\ag[\atThread\aw:", pm->Thread, "\ag] \awDownload of\ay ", pm->FileName, "\awis\at", std::to_string(progress), "%\aw complete."), true);
+	MeshWriteChat(fmt::format("{} {}{} {} {} {} {}", "\ag[\atThread\aw:", pm->Thread, "\ag] \awDownload of\ay", pm->FileName, "\awis\at", std::to_string(progress), "%\aw complete."), true);
 	fProgressDL = progress;
 	return CURL_PROGRESSFUNC_CONTINUE;
 }
