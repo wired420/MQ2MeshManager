@@ -69,16 +69,18 @@
       <Message>Updating version resource for $(MSBuildProjectName)...</Message>
     </PreBuildEvent>
     <Link>
-      <AdditionalDependencies Condition="'$(Configuration)|$(Platform)'=='Release|x64'">mq2main.lib;Ws2_32.lib;crypt32.lib;zlib.lib;libcurl.lib;cryptopp-static.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies Condition="'$(Configuration)|$(Platform)'=='Release|x64'">mq2main.lib;Ws2_32.lib;crypt32.lib;zlib.lib;libcurl.lib;cryptopp-static.lib;libssl.lib;libcrypto.lib;%(AdditionalDependencies)
+</AdditionalDependencies>
     </Link>
     <Link>
-      <AdditionalDependencies Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Ws2_32.lib;crypt32.lib;zlibd.lib;libcurl-d.lib;cryptopp-static.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Ws2_32.lib;crypt32.lib;zlibd.lib;libcurl-d.lib;cryptopp-static.lib;libssl.lib;libcrypto.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <Link>
-      <AdditionalDependencies Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">mq2main.lib;Ws2_32.lib;crypt32.lib;zlib.lib;libcurl.lib;cryptopp-static.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">mq2main.lib;Ws2_32.lib;crypt32.lib;zlib.lib;libcurl.lib;cryptopp-static.lib;libssl.lib;libcrypto.lib;%(AdditionalDependencies)
+</AdditionalDependencies>
     </Link>
     <Link>
-      <AdditionalDependencies Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Ws2_32.lib;crypt32.lib;zlibd.lib;libcurl-d.lib;cryptopp-static.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Ws2_32.lib;crypt32.lib;zlibd.lib;libcurl-d.lib;cryptopp-static.lib;libssl.lib;libcrypto.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <PropertyGroup>
