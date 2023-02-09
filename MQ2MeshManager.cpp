@@ -273,12 +273,18 @@ void MeshLoadDatabase()
 	else
 	{
 		FILE* jFile;
-
 		const errno_t err = fopen_s(&jFile, f.string().c_str(), "r");
 		if (err == 0)
 		{
 			MeshDatabase.clear();
-			MeshDatabase = json::parse(jFile);
+			try {
+				MeshDatabase = json::parse(jFile);
+			}
+			catch (json::parse_error& e)
+			{
+				MeshWriteChat(fmt::format("\arInvalid or empty database file. \a-r[\arError\aw: {}\a-r]", e.what()), false);
+				MeshWriteChat(fmt::format("\arDelete \a-r'\aw{}\a-r'\ar and try \aw/mesh updatedb\ar again.", f.string()), false);
+			}
 			MeshWriteChat("\agDatabase Initialized.", false);
 			fclose(jFile);
 		}
@@ -317,7 +323,8 @@ int Curl_Progress_Report(void* ptr, double TotalToDownload, double NowDownloaded
 		return 0;
 	}
 	int progress = (int)round(NowDownloaded * 100 / TotalToDownload);
-	MeshWriteChat(fmt::format("{} {}{} {} {} {} {}", "\ag[\atThread\aw:", pm->Thread, "\ag] \awDownload of\ay", pm->FileName, "\awis\at", std::to_string(progress), "%\aw complete."), true);
+	MeshWriteChat(fmt::format("\ag[\atThread\aw: {}\ag] \awDownload of\ay {} \awis\at {}%\aw complete.", pm->Thread, pm->FileName, std::to_string(progress)), true);
+
 	fProgressDL = progress;
 	return CURL_PROGRESSFUNC_CONTINUE;
 }
@@ -328,7 +335,7 @@ void MeshDownloadFile(const std::string& url, const std::string& filename, const
 	CURL* curl;
 	FILE* fp;
 	CURLcode result;
-	const std::string FinalPath = fmt::format("{}{}{}", savepath, "\\", filename);
+	const std::string FinalPath = fmt::format("{}\\{}", savepath, filename);
 
 	// Update TLOs
 	fCurrentDL = filename;
@@ -352,7 +359,7 @@ void MeshDownloadFile(const std::string& url, const std::string& filename, const
 			{
 				DownloadThreads--;
 			}
-			MeshWriteChat(fmt::format("{} {} {} {}[}", "\arError opening\aw", filename, "\arfor writing. [Error:", errstr, "]"), false);
+			MeshWriteChat(fmt::format("\arError opening\aw {} \arfor writing. \a-r[\arError\aw: {}\a-r]", filename, errstr), false);
 			curl_easy_cleanup(curl);
 		}
 		else
@@ -371,7 +378,7 @@ void MeshDownloadFile(const std::string& url, const std::string& filename, const
 				{
 					DownloadThreads--;
 				}
-				MeshWriteChat(fmt::format("{} {} {}", "\awDownload of\ag", filename, "\aw complete."), true);
+				MeshWriteChat(fmt::format("\awDownload of\ag {} \aw complete.", filename), true);
 			}
 			else
 			{
@@ -379,7 +386,7 @@ void MeshDownloadFile(const std::string& url, const std::string& filename, const
 				{
 					DownloadThreads--;
 				}
-				MeshWriteChat(fmt::format("{} {} {} {}{}", "\arError downloading file\aw", filename, "\ar.\n\a-r[\arError Code:\aw", curl_easy_strerror(result), "\a-r]"), false);
+				MeshWriteChat(fmt::format("\arError downloading file\aw {} \ar.\n\a-r[\arError Code:\aw {}\a-r]", filename, curl_easy_strerror(result)), false);
 			}
 			curl_easy_cleanup(curl);
 			fclose(fp);
@@ -516,7 +523,14 @@ void MeshManagerLoadSettings()
 		const errno_t err = fopen_s(&jFile, f.string().c_str(), "rb");
 		if (err == 0)
 		{
-			SettingsDatabase = json::parse(jFile);
+			try {
+				SettingsDatabase = json::parse(jFile);
+			}
+			catch (json::parse_error& e)
+			{
+				MeshWriteChat(fmt::format("\arInvalid or empty settings file. \a-r[\arError\aw: {}\a-r]", e.what()), false);
+				MeshWriteChat(fmt::format("\arDelete \a-r'\aw{}\a-r'\ar and reload the plugin.", f.string()), false);
+			}
 			fclose(jFile);
 
 			auto& settings = SettingsDatabase["Settings"];
@@ -580,7 +594,14 @@ void MeshManagerLoadIgnores()
 		const errno_t err = fopen_s(&jFile, p.string().c_str(), "rb");
 		if (err == 0)
 		{
-			IgnoreDatabase = json::parse(jFile);
+			try {
+				IgnoreDatabase = json::parse(jFile);
+			}
+			catch (json::parse_error& e)
+			{
+				MeshWriteChat(fmt::format("\arInvalid or empty ignores file. \a-r[\arError\aw: {}\a-r]", e.what()), false);
+				MeshWriteChat(fmt::format("\arDelete \a-r'\aw{}\a-r'\ar and recreate your ignore list.", p.string()), false);
+			}
 			fclose(jFile);
 
 			IgnoreList.clear();
@@ -671,7 +692,7 @@ void MeshManager(SPAWNINFO* pChar, char* szLine)
 				if (Param3[0] == '\0')
 				{
 					IgnoreList.push_back(zonename);
-					MeshWriteChat(fmt::format("{} {} {}", "\a-tAdded Zone\ag", zonename, "\a-tto download ignore list."), false);
+					MeshWriteChat(fmt::format("\a-tAdded Zone\ag {} \a-tto download ignore list.", zonename), false);
 					MeshManagerSaveIgnores();
 				}
 				else
@@ -680,7 +701,7 @@ void MeshManager(SPAWNINFO* pChar, char* szLine)
 					if (ValidateZoneShortName(p3))
 					{
 						IgnoreList.push_back(p3);
-						MeshWriteChat(fmt::format("{} {} {}", "\a-tAdded Zone\ag", p3, "\a-tto download ignore list"), false);
+						MeshWriteChat(fmt::format("\a-tAdded Zone\ag {} \a-tto download ignore list", p3), false);
 						MeshManagerSaveIgnores();
 					}
 					else
@@ -700,7 +721,7 @@ void MeshManager(SPAWNINFO* pChar, char* szLine)
 						if (IgnoreList[i] == zonename)
 						{
 							IgnoreList.erase(std::next(IgnoreList.begin(), i));
-							MeshWriteChat(fmt::format("{} {} {}", "\a-tRemoved zone\ar", zonename, "\a-tfrom download ignore list."), false);
+							MeshWriteChat(fmt::format("\a-tRemoved zone\ar {} \a-tfrom download ignore list.", zonename), false);
 							MeshManagerSaveIgnores();
 							return;
 						}
@@ -713,7 +734,7 @@ void MeshManager(SPAWNINFO* pChar, char* szLine)
 					{
 						auto p3a = std::find(IgnoreList.begin(), IgnoreList.end(), p3);
 						IgnoreList.erase(p3a);
-						MeshWriteChat(fmt::format("{} {} {}", "\a-tRemoved zone\ar", p3, "\a-tfrom download ignore list."), false);
+						MeshWriteChat(fmt::format("\a-tRemoved zone\ar {} \a-tfrom download ignore list.", p3), false);
 						MeshManagerSaveIgnores();
 						return;
 					}
@@ -741,20 +762,20 @@ void MeshManager(SPAWNINFO* pChar, char* szLine)
 				if (Param3[0] == '\0')
 				{
 					AutoFeature = (AutoCheckForUpdates) ? "\agOn" : "\arOff";
-					MeshWriteChat(fmt::format("{} {}" "\a-tAutomatically Check For Updates\aw:", AutoFeature), false);
+					MeshWriteChat(fmt::format("\a-tAutomatically Check For Updates\aw: {}", AutoFeature), false);
 				}
 				else if (Param3[0] != '\0')
 				{
 					if (mq::ci_equals(Param3, "on") || mq::ci_equals(Param3, "1") || mq::ci_equals(Param3, "true"))
 					{
 						AutoCheckForUpdates = true;
-						MeshWriteChat(fmt::format("{} {}", "\a-tAutomatically Check For Updates\aw:\ag", Param3), false);
+						MeshWriteChat(fmt::format("\a-tAutomatically Check For Updates\aw:\ag {}", Param3), false);
 						MeshManagerSaveSettings();
 					}
 					else if (mq::ci_equals(Param3, "off") || mq::ci_equals(Param3, "0") || mq::ci_equals(Param3, "false"))
 					{
 						AutoCheckForUpdates = false;
-						MeshWriteChat(fmt::format("{} {}", "\a-tAutomatically Check For Updates\aw:\ar", Param3), false);
+						MeshWriteChat(fmt::format("\a-tAutomatically Check For Updates\aw:\ar {}", Param3), false);
 						MeshManagerSaveSettings();
 					}
 					else
@@ -768,7 +789,7 @@ void MeshManager(SPAWNINFO* pChar, char* szLine)
 			{
 				if (Param3[0] == '\0')
 				{
-					MeshWriteChat(fmt::format("{} {}", "\a-tMax Download Threads\aw:\ag", std::to_string(MaxDownloadThreads)), false);
+					MeshWriteChat(fmt::format("\a-tMax Download Threads\aw:\ag {}", std::to_string(MaxDownloadThreads)), false);
 				}
 				else if (Param3[0] != '\0')
 				{
@@ -786,7 +807,7 @@ void MeshManager(SPAWNINFO* pChar, char* szLine)
 						}
 						else
 						{
-							MeshWriteChat(fmt::format("{} {}", "\a-tMax Download Threads\aw:\ag", p3), false);
+							MeshWriteChat(fmt::format("\a-tMax Download Threads\aw:\ag {}", p3), false);
 							MaxDownloadThreads = p3;
 							MeshManagerSaveSettings();
 						}
@@ -797,7 +818,7 @@ void MeshManager(SPAWNINFO* pChar, char* szLine)
 			{
 				if (Param3[0] == '\0')
 				{
-					MeshWriteChat(fmt::format("{} {}", "\a-tMax Hash Threads\aw:\ar", std::to_string(MaxHashThreads)), false);
+					MeshWriteChat(fmt::format("\a-tMax Hash Threads\aw:\ar {}", std::to_string(MaxHashThreads)), false);
 				}
 				else if (Param3[0] != '\0')
 				{
@@ -816,7 +837,7 @@ void MeshManager(SPAWNINFO* pChar, char* szLine)
 						}
 						else
 						{
-							MeshWriteChat(fmt::format("{} {}", "\a-tMax Hash Threads\aw:\ag", Param3), false);
+							MeshWriteChat(fmt::format("\a-tMax Hash Threads\aw:\ag {}", Param3), false);
 							MaxHashThreads = p3;
 							MeshManagerSaveSettings();
 						}
@@ -829,20 +850,20 @@ void MeshManager(SPAWNINFO* pChar, char* szLine)
 				if (Param3[0] == '\0')
 				{
 					AutoFeature = (AutoDownloadMissing) ? "\agOn" : "\arOff";
-					MeshWriteChat(fmt::format("{} {}", "\a-tAutomatically Download Missing Meshes\aw:", AutoFeature), false);
+					MeshWriteChat(fmt::format("\a-tAutomatically Download Missing Meshes\aw: {}", AutoFeature), false);
 				}
 				else if (Param3[0] != '\0')
 				{
 					if (mq::ci_equals(Param3, "on") || mq::ci_equals(Param3, "1") || mq::ci_equals(Param3, "true"))
 					{
 						AutoDownloadMissing = true;
-						MeshWriteChat(fmt::format("{} {}", "\a-tAutomatically Download Missing Meshes\aw:\ag", Param3), false);
+						MeshWriteChat(fmt::format("\a-tAutomatically Download Missing Meshes\aw:\ag {}", Param3), false);
 						MeshManagerSaveSettings();
 					}
 					else if (mq::ci_equals(Param3, "off") || mq::ci_equals(Param3, "0") || mq::ci_equals(Param3, "false"))
 					{
 						AutoDownloadMissing = false;
-						MeshWriteChat(fmt::format("{} {}", "\a-tAutomatically Download Missing Meshes\aw:\ar", Param3), false);
+						MeshWriteChat(fmt::format("\a-tAutomatically Download Missing Meshes\aw:\ar {}", Param3), false);
 						MeshManagerSaveSettings();
 					}
 					else
@@ -858,20 +879,20 @@ void MeshManager(SPAWNINFO* pChar, char* szLine)
 				if (Param3[0] == '\0')
 				{
 					AutoFeature = (HideProgress) ? "\arOff" : "\agOn";
-					MeshWriteChat(fmt::format("{} {}", "\a-tShow Download Progress\aw:", AutoFeature), false);
+					MeshWriteChat(fmt::format("\a-tShow Download Progress\aw: {}", AutoFeature), false);
 				}
 				else if (Param3[0] != '\0')
 				{
 					if (mq::ci_equals(Param3, "on") || mq::ci_equals(Param3, "1") || mq::ci_equals(Param3, "true"))
 					{
 						HideProgress = 0;
-						MeshWriteChat(fmt::format("{} {}", "\a-tShow Download Progress\aw:\ag", Param3), false);
+						MeshWriteChat(fmt::format("\a-tShow Download Progress\aw:\ag {}", Param3), false);
 						MeshManagerSaveSettings();
 					}
 					else if (mq::ci_equals(Param3, "off") || mq::ci_equals(Param3, "0") || mq::ci_equals(Param3, "false"))
 					{
 						HideProgress = 1;
-						MeshWriteChat(fmt::format("{} {}", "\a-tShow Download Progress\aw:\ar", Param3), false);
+						MeshWriteChat(fmt::format("\a-tShow Download Progress\aw:\ar {}", Param3), false);
 						MeshManagerSaveSettings();
 					}
 					else
@@ -887,20 +908,20 @@ void MeshManager(SPAWNINFO* pChar, char* szLine)
 				if (Param3[0] == '\0')
 				{
 					AutoFeature = (ThreadSafe) ? "\agOn" : "\arOff";
-					MeshWriteChat(fmt::format("{} {}", "\a-tThread Safety\aw:", AutoFeature), false);
+					MeshWriteChat(fmt::format("\a-tThread Safety\aw: {}", AutoFeature), false);
 				}
 				else if (Param3 != NULL || Param3[0] != '\0')
 				{
 					if (mq::ci_equals(Param3, "on") || mq::ci_equals(Param3, "1") || mq::ci_equals(Param3, "true"))
 					{
 						ThreadSafe = true;
-						MeshWriteChat(fmt::format("{} {}", "\a-tThread Safety\aw:\ag", Param3), false);
+						MeshWriteChat(fmt::format("\a-tThread Safety\aw:\ag {}", Param3), false);
 						MeshManagerSaveSettings();
 					}
 					else if (mq::ci_equals(Param3, "off") || mq::ci_equals(Param3, "0") || mq::ci_equals(Param3, "false"))
 					{
 						ThreadSafe = false;
-						MeshWriteChat(fmt::format("{} {}", "\a-tThread Safety\aw:\ar", Param3), false);
+						MeshWriteChat(fmt::format("\a-tThread Safety\aw:\ar {}", Param3), false);
 						MeshManagerSaveSettings();
 					}
 					else
@@ -1052,8 +1073,8 @@ void MeshManagerDisplayHashes(const char* Param2)
 		std::string md5 = Get_Hash(hPath);
 		//std::string sha256 = Get_Hash(hPath, "sha256");
 
-		MeshWriteChat(fmt::format("{} {} {}", "\a-t------------------------\aw", fn, "\a-t ------------------------"), false);
-		MeshWriteChat(fmt::format("{} {}", "\a-tMD5\ag:\aw", md5), false);
+		MeshWriteChat(fmt::format("\a-t------------------------\aw {} \a-t ------------------------", fn), false);
+		MeshWriteChat(fmt::format("\a-tMD5\ag:\aw {}", md5), false);
 		//MeshWriteChat("\a-tSHA256\ag:\aw " + sha256, false);
 	}
 	else
@@ -1094,15 +1115,15 @@ void MeshManagerUpdateZone(const char* Param2)
 				std::string dHash = MeshDatabase[std::string(GetShortZone(currentZoneID))]["hash"];
 				std::string fHash = Get_Hash(fPath.string() + "\\" + fn);
 
-				MeshWriteChat(fmt::format("{} {}", "\awYou currently have a copy of\ar ", fn), false);
+				MeshWriteChat(fmt::format("\awYou currently have a copy of\ar {}", fn), false);
 				int upd = dHash.compare(fHash);
 				if (upd == 0)
 				{
-					MeshWriteChat(fmt::format("{} {} {}", "\awIt is currently up to date. If you still wish to update it type\ar /mesh updatezone", GetShortZone(currentZoneID), "\awto overwrite."), false);
+					MeshWriteChat(fmt::format("\awIt is currently up to date. If you still wish to update it type\ar /mesh updatezone {} \awto overwrite.", GetShortZone(currentZoneID)), false);
 				}
 				else
 				{
-					MeshWriteChat(fmt::format("{} {} {}", "\awThere is currenntly a newer version available. If you are \arsure\aw you wish to overwrite your current mesh type\ar /mesh updatezone", GetShortZone(currentZoneID), "\awto overwrite."), false);
+					MeshWriteChat(fmt::format("\awThere is currenntly a newer version available. If you are \arsure\aw you wish to overwrite your current mesh type\ar /mesh updatezone {} \awto overwrite.", GetShortZone(currentZoneID)), false);
 				}
 			}
 		}
@@ -1139,7 +1160,7 @@ void MeshManagerMenu(const std::string& menu = "help")
 	}
 	if (menu == "help")
 	{
-		MeshWriteChat(fmt::format("{} {}", "\a-tBy\aw:\ag wired420 \aw- \a-tVersion\aw:\ag", MeshPluginVersion), false);
+		MeshWriteChat(fmt::format("\a-tBy\aw:\ag wired420 \aw- \a-tVersion\aw:\ag {}", MeshPluginVersion), false);
 		if (!fAgree)
 		{
 			MeshWriteChat("\a-r*** \arAGREEMENT NOT ACCEPTED\a-r ***", false);
@@ -1196,15 +1217,15 @@ void MeshManagerMenu(const std::string& menu = "help")
 
 		MeshWriteChat("\a-t------------------- \awSettings\a-t -----------------", false);
 		MeshWriteChat("\a-t--------------------------------------------------", false);
-		MeshWriteChat(fmt::format("{} {} {} {}", "\a-tMax Downloads\aw:\ar", std::to_string(MaxDownloadThreads), "\a-tMax Hashes\aw:\ar", std::to_string(MaxHashThreads)), false);
+		MeshWriteChat(fmt::format("\a-tMax Downloads\aw:\ar {} \a-tMax Hashes\aw:\ar {}", std::to_string(MaxDownloadThreads), std::to_string(MaxHashThreads)), false);
 		AutoFeatures = (AutoDownloadMissing) ? "\agOn" : "\arOff";
-		MeshWriteChat(fmt::format("{} {}", "\a-tAuto Download Missing\aw:", AutoFeatures), false);
+		MeshWriteChat(fmt::format("\a-tAuto Download Missing\aw: {}", AutoFeatures), false);
 		AutoFeatures = (AutoCheckForUpdates) ? "\agOn" : "\arOff";
-		MeshWriteChat(fmt::format("{} {}", "\a-tCheck For Updates At Login\aw:", AutoFeatures), false);
+		MeshWriteChat(fmt::format("\a-tCheck For Updates At Login\aw: {}", AutoFeatures), false);
 		AutoFeatures = (HideProgress) ? "\arOff" : "\agOn";
-		MeshWriteChat(fmt::format("{} {}", "\a-tShow Download Progress\aw:", AutoFeatures), false);
+		MeshWriteChat(fmt::format("\a-tShow Download Progress\aw: {}", AutoFeatures), false);
 		AutoFeatures = (ThreadSafe) ? "\agOn" : "\arOff";
-		MeshWriteChat(fmt::format("{} {}", "\a-tThread Safety\aw:", AutoFeatures), false);
+		MeshWriteChat(fmt::format("\a-tThread Safety\aw: {}", AutoFeatures), false);
 	}
 	if (menu == "tlos")
 	{
@@ -1273,16 +1294,7 @@ PLUGIN_API void InitializePlugin() {
 		fAgree = true;
 	}
 
-	fPath = fs::path(gPathResources) / "MQ2MeshManager" / "meshdb.json";
-	if (fs::exists(fPath, ec))
-	{
-		MeshLoadDatabase();
-	}
-	else
-	{
-		MeshWriteChat("\awDatabase does not exist yet. Please use\ar /mesh updatedb\aw before continuing.", false);
-	}
-
+	MeshLoadDatabase();
 	AddCommand("/mesh", MeshManager);
 	AddMQ2Data("MeshManaager", DataMeshManager);
 }
