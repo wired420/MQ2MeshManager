@@ -52,7 +52,7 @@ using json = nlohmann::json;
 namespace fs = std::filesystem;
 
 PreSetup("MQ2MeshManager");
-PLUGIN_VERSION(1.0);
+PLUGIN_VERSION(1.1);
 
 /**
  * GLOBALS
@@ -60,7 +60,7 @@ PLUGIN_VERSION(1.0);
  * Avoid Globals if at all possible, since they persist throughout your program.
  * But if you must have them, here is the place to put them.
  */
-static const std::string MeshPluginVersion = "1.0b";
+static const std::string MeshPluginVersion = "1.1b";
 bool fAgree = false;
 static std::chrono::steady_clock::time_point PulseTimer = std::chrono::steady_clock::now();
 static std::chrono::steady_clock::time_point DownloadThreadTimer = std::chrono::steady_clock::now();
