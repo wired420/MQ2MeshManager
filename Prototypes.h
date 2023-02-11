@@ -24,6 +24,7 @@ void MeshManagerSaveSettings();
 void MeshManagerLoadSettings();
 void MeshManagerSaveIgnores();
 void MeshManagerLoadIgnores();
+void MeshManagerIgnore(const std::string& Param2, const std::string& Param3);
 void Get_Hash_For_Update(const struct HashListStorage& tmp);
 std::string Get_Hash(const fs::path& p, const std::string& h);
 std::string MD5(const std::string& data);
