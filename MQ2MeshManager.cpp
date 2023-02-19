@@ -778,6 +778,21 @@ void MeshManagerIgnore(const std::string& Param2, const std::string& Param3)
 	}
 }
 
+void MeshManagerConfirmAgreement()
+{
+	fs::path fp = fs::path(gPathResources) / "MQ2MeshManager" / "confirmed.txt";
+	if (!fs::exists(fp, ec))
+	{
+		std::ofstream output(fp);
+		MeshWriteChat("\agAgreement Confirmed!", true);
+	}
+	else
+	{
+		MeshWriteChat("\arPermissions error. Can't open agreement file for writing.", false);
+		return;
+	}
+}
+
 /**
  * COMMANDS
  *
@@ -811,17 +826,7 @@ void MeshManager(SPAWNINFO* pChar, char* szLine)
 			{
 				if (mq::ci_equals(Param2, "confirm"))
 				{
-					fs::path fp = fs::path(gPathResources) / "MQ2MeshManager" / "confirmed.txt";
-					if (!fs::exists(fp, ec))
-					{
-						std::ofstream output(fp);
-						MeshWriteChat("\agAgreement Confirmed!", true);
-					}
-					else
-					{
-						MeshWriteChat("\arPermissions error. Can't open agreement file for writing.", false);
-						return;
-					}
+					MeshManagerConfirmAgreement();
 				}
 				else
 				{
@@ -1486,7 +1491,7 @@ PLUGIN_API void SetGameState(int GameState)
 			if (AutoCheckForUpdates)
 			{
 				DoCommand(nullptr, "/mesh updatedb");
-				DoCommand(nullptr, "/timed 10 /mesh updateall confirm");
+				DoCommand(nullptr, "/timed 100 /mesh updateall confirm");
 			}
 		}
 	}
@@ -1652,146 +1657,162 @@ PLUGIN_API void OnUpdateImGui()
 		{
 			if (ImGui::Begin("Mesh Manager", &ShowMeshManagerWindow, ImGuiWindowFlags_AlwaysAutoResize|ImGuiWindowFlags_NoResize))
 			{
-				if (ImGui::BeginTabBar("MeshManagerTabs", ImGuiTabBarFlags_None))
+				if (!fAgree)
 				{
-					if (ImGui::BeginTabItem("General"))
+					ImGui::Text("I hereby acknowledge, that I have read AND accept that this plugin connects to and downloads from the internet.");
+					ImGui::Text("All connections from this plugin are made directly to https ://mqmesh.com over a TLS encrypted connection.");
+					ImGui::Spacing();
+					ImGui::Text("By checking the box below you acknowledge that you accept these terms.");
+					bool agreement = false;
+					agreement = ImGui::Checkbox("I Agree", &fAgree);
+					if (agreement)
 					{
-						ImGui::Spacing();
-						ImGui::BeginGroup();
-						ImGui::TextColored(ImVec4(0, 1, 1, 1), ICON_FA_DOWNLOAD);
-						ImGui::SameLine();
-						ImGui::Text("Remote Meshes: %d", RemoteMeshes);
-						ImGui::SameLine(0.0f, 20.0f);
-						ImGui::TextColored(ImVec4(0, 1, 1, 1), ICON_FA_FILE);
-						ImGui::SameLine();
-						ImGui::Text("Local Meshes: %d", LocalMeshes);
-						ImGui::EndGroup();
-						ImGui::Spacing();
-						ImGui::Separator();
-						ImGui::Spacing();
-						ImGui::BeginGroup();
-						ImGui::Text("Updates:");
-						if (ImGui::Button("Update Database"))
-						{
-							MeshUpdateDatabase();
-						}
-						ImGui::SameLine();
-						if (!fDownloadReady)
-						{
-							ImGui::SameLine();
-							if (ImGui::Button("Update Zone"))
-							{
-								MeshManagerUpdateZone(GetShortZone(pLocalPC->zoneId));
-							}
-							ImGui::SameLine();
-							ImGui::SameLine();
-							if (ImGui::Button("Update All"))
-							{
-								MeshWriteChat("Checking for available updates!", false);
-								MeshManagerUpdateAll("confirm", "");
-							}
-						}
-						ImGui::EndGroup();
-						ImGui::Spacing();
-						ImGui::Separator();
-						ImGui::Spacing();
-						ImGui::BeginGroup();
-						ImGui::Text("Quick Zone Ignore (Current Zone: %s)", GetShortZone(pLocalPC->zoneId));
-						if (ImGui::Button("Add"))
-						{
-							MeshManagerIgnore("add", GetShortZone(pLocalPC->zoneId));
-						}
-						ImGui::SameLine();
-
-						ImGui::SameLine();
-						if (ImGui::Button("Delete"))
-						{
-							MeshManagerIgnore("del", GetShortZone(pLocalPC->zoneId));
-						}
-						ImGui::EndGroup();
-						ImGui::EndTabItem();
+						MeshManagerConfirmAgreement();
 					}
-					if (ImGui::BeginTabItem("Ignore"))
+				}
+				else
+				{
+					if (ImGui::BeginTabBar("MeshManagerTabs", ImGuiTabBarFlags_None))
 					{
-						ImGui::Text("Select To Remove");
-						if (ImGui::ListBoxHeader("Ignores", ImVec2(0, 0)))
+						if (ImGui::BeginTabItem("General"))
 						{
-							for (auto i : IgnoreList)
+							ImGui::Spacing();
+							ImGui::BeginGroup();
+							ImGui::TextColored(ImVec4(0, 1, 1, 1), ICON_FA_DOWNLOAD);
+							ImGui::SameLine();
+							ImGui::Text("Remote Meshes: %d", RemoteMeshes);
+							ImGui::SameLine(0.0f, 20.0f);
+							ImGui::TextColored(ImVec4(0, 1, 1, 1), ICON_FA_FILE);
+							ImGui::SameLine();
+							ImGui::Text("Local Meshes: %d", LocalMeshes);
+							ImGui::EndGroup();
+							ImGui::Spacing();
+							ImGui::Separator();
+							ImGui::Spacing();
+							ImGui::BeginGroup();
+							ImGui::Text("Updates:");
+							if (ImGui::Button("Update Database"))
 							{
-								if (i != "0")
+								MeshUpdateDatabase();
+							}
+							ImGui::SameLine();
+							if (!fDownloadReady)
+							{
+								ImGui::SameLine();
+								if (ImGui::Button("Update Zone"))
 								{
-									if (ImGui::Selectable(i.c_str()))
+									MeshManagerUpdateZone(GetShortZone(pLocalPC->zoneId));
+								}
+								ImGui::SameLine();
+								ImGui::SameLine();
+								if (ImGui::Button("Update All"))
+								{
+									MeshWriteChat("Checking for available updates!", false);
+									MeshManagerUpdateAll("confirm", "");
+								}
+							}
+							ImGui::EndGroup();
+							ImGui::Spacing();
+							ImGui::Separator();
+							ImGui::Spacing();
+							ImGui::BeginGroup();
+							ImGui::Text("Quick Zone Ignore (Current Zone: %s)", GetShortZone(pLocalPC->zoneId));
+							if (ImGui::Button("Add"))
+							{
+								MeshManagerIgnore("add", GetShortZone(pLocalPC->zoneId));
+							}
+							ImGui::SameLine();
+
+							ImGui::SameLine();
+							if (ImGui::Button("Delete"))
+							{
+								MeshManagerIgnore("del", GetShortZone(pLocalPC->zoneId));
+							}
+							ImGui::EndGroup();
+							ImGui::EndTabItem();
+						}
+						if (ImGui::BeginTabItem("Ignore"))
+						{
+							ImGui::Text("Select To Remove");
+							if (ImGui::ListBoxHeader("Ignores", ImVec2(0, 0)))
+							{
+								for (auto i : IgnoreList)
+								{
+									if (i != "0")
 									{
-										MeshManagerIgnore("del", i);
+										if (ImGui::Selectable(i.c_str()))
+										{
+											MeshManagerIgnore("del", i);
+										}
 									}
 								}
+								ImGui::ListBoxFooter();
 							}
-							ImGui::ListBoxFooter();
-						}
-						ImGui::Separator();
-						ImGui::Text("Select To Add");
-						static const char* item_current = Zones[0];
-						if (ImGui::BeginCombo("Add Zone", item_current, ImGuiComboFlags_HeightRegular))
-						{
-							already_clicked = true;
-							for (int i = 0; i < MaxZone; i++)
+							ImGui::Separator();
+							ImGui::Text("Select To Add");
+							static const char* item_current = Zones[0];
+							if (ImGui::BeginCombo("Add Zone", item_current, ImGuiComboFlags_HeightRegular))
 							{
-								if (ImGui::Selectable(Zones[i]))
+								already_clicked = true;
+								for (int i = 0; i < MaxZone; i++)
 								{
-									item_current = Zones[i];
-									MeshManagerIgnore("add", Zones[i]);
+									if (ImGui::Selectable(Zones[i]))
+									{
+										item_current = Zones[i];
+										MeshManagerIgnore("add", Zones[i]);
+									}
 								}
+								ImGui::EndCombo();
 							}
-							ImGui::EndCombo();
+							ImGui::EndTabItem();
 						}
-						ImGui::EndTabItem();
-					}
-					if (ImGui::BeginTabItem("Settings"))
-					{
-						int valueMissing = (AutoDownloadMissing) ? 1 : 0;
-						bool changedMaxDownloads = false, changedMaxHashes = false, changedMissingRadios = false;
-						bool missingChanged = false, autoupdateChanged = false, progressChanged = false;
-						bool threadsafetyChanged = false;
-						bool autoUpdate = (HideProgress) ? 0 : 1;
+						if (ImGui::BeginTabItem("Settings"))
+						{
+							int valueMissing = (AutoDownloadMissing) ? 1 : 0;
+							bool changedMaxDownloads = false, changedMaxHashes = false, changedMissingRadios = false;
+							bool missingChanged = false, autoupdateChanged = false, progressChanged = false;
+							bool threadsafetyChanged = false;
+							bool autoUpdate = (HideProgress) ? 0 : 1;
 
-						changedMaxDownloads = ImGui::SliderInt("Max Downloads", &MaxDownloadThreads, 1, 10);
-						if (changedMaxDownloads)
-						{
-							MeshManagerSaveSettings();
-						}
-						changedMaxHashes = ImGui::SliderInt("Max Hashes", &MaxHashThreads, 1, 10);
-						if (changedMaxHashes)
-						{
-							MeshManagerSaveSettings();
-						}
-						missingChanged = ImGui::Checkbox("Auto Download Missing", &AutoDownloadMissing);
-						if (missingChanged)
-						{
-							MeshManagerSaveSettings();
-						}
-						autoupdateChanged = ImGui::Checkbox("Auto Update At Login", &AutoCheckForUpdates);
-						if (autoupdateChanged)
-						{
-							MeshManagerSaveSettings();
-						}
-						progressChanged = ImGui::Checkbox("Show Download Progress", &autoUpdate);
-						if (progressChanged)
-						{
-							if (autoUpdate)
-								HideProgress = 0;
-							else
-								HideProgress = 1;
+							changedMaxDownloads = ImGui::SliderInt("Max Downloads", &MaxDownloadThreads, 1, 10);
+							if (changedMaxDownloads)
+							{
+								MeshManagerSaveSettings();
+							}
+							changedMaxHashes = ImGui::SliderInt("Max Hashes", &MaxHashThreads, 1, 10);
+							if (changedMaxHashes)
+							{
+								MeshManagerSaveSettings();
+							}
+							missingChanged = ImGui::Checkbox("Auto Download Missing", &AutoDownloadMissing);
+							if (missingChanged)
+							{
+								MeshManagerSaveSettings();
+							}
+							autoupdateChanged = ImGui::Checkbox("Auto Update At Login", &AutoCheckForUpdates);
+							if (autoupdateChanged)
+							{
+								MeshManagerSaveSettings();
+							}
+							progressChanged = ImGui::Checkbox("Show Download Progress", &autoUpdate);
+							if (progressChanged)
+							{
+								if (autoUpdate)
+									HideProgress = 0;
+								else
+									HideProgress = 1;
 
-							MeshManagerSaveSettings();
+								MeshManagerSaveSettings();
+							}
+							threadsafetyChanged = ImGui::Checkbox("Thread Safety", &ThreadSafe);
+							if (threadsafetyChanged)
+							{
+								MeshManagerSaveSettings();
+							}
+							ImGui::EndTabItem();
 						}
-						threadsafetyChanged = ImGui::Checkbox("Thread Safety", &ThreadSafe);
-						if (threadsafetyChanged)
-						{
-							MeshManagerSaveSettings();
-						}
-						ImGui::EndTabItem();
+						ImGui::EndTabBar();
 					}
-					ImGui::EndTabBar();
 				}
 			}
 			ImGui::End();
