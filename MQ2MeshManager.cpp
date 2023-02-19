@@ -1640,7 +1640,7 @@ PLUGIN_API void OnUpdateImGui()
 	{
 		if (ShowMeshManagerWindow)
 		{
-			if (ImGui::Begin("Mesh Manager", &ShowMeshManagerWindow, ImGuiWindowFlags_None))
+			if (ImGui::Begin("Mesh Manager", &ShowMeshManagerWindow, ImGuiWindowFlags_AlwaysAutoResize|ImGuiWindowFlags_NoResize))
 			{
 				if (ImGui::BeginTabBar("MeshManagerTabs", ImGuiTabBarFlags_None))
 				{
