@@ -1278,6 +1278,7 @@ void MeshManagerMenu(const std::string& menu = "help")
 		MeshWriteChat("\a-t/mesh ignore <list|add|del> [zone shortname] - Marks Meshes to not ever download.", false);
 		MeshWriteChat("\a-t/mesh tlos - Lists available TLOs available.", false);
 		MeshWriteChat("\a-t/mesh hash [zone shortname] - Displays hashes for current or desinated zone.", false);
+		MeshWriteChat("\a-t/mesh ui - Shows or closes graphical user interface", false);
 		MeshWriteChat("\a-t/mesh set - Display settings menu.", false);
 		MeshWriteChat("\a-t/mesh settings - Display Current Settings", false);
 		MeshWriteChat("\a-t--------------------------------------------------", false);
