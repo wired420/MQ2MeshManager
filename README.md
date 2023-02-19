@@ -26,6 +26,7 @@ A list of available commands.
 /mesh updateall [confirm] [overwrite]- Checks all meshes for updates.
 /mesh hash [zone shortname] - Displays hashes for current or designated zone.
 /mesh tlos - Lists available TLOs available.
+/mesh ui - Opens/Closes Graphical User Interface
 /mesh set - Displays settings menu.
 /mesh settings - Displays current settings.
 
