@@ -256,7 +256,17 @@ bool ValidateZoneShortName(const std::string& shortname)
 
 std::size_t number_of_files_in_directory(std::filesystem::path path)
 {
-	return (std::size_t)std::distance(std::filesystem::directory_iterator{ path }, std::filesystem::directory_iterator{});
+	int count = 0;
+	std::string extension(".navmesh");
+	for (auto& p : fs::recursive_directory_iterator(path))
+	{
+		if (p.path().extension() == extension)
+		{
+			count++;
+		}
+	}
+	return (std::size_t)count;
+	//return (std::size_t)std::distance(std::filesystem::directory_iterator{ path }, std::filesystem::directory_iterator{});
 }
 
 /**
@@ -1470,7 +1480,7 @@ PLUGIN_API void SetGameState(int GameState)
 			{
 				fAgree = true;
 			}
-			LocalMeshes = static_cast<int>(number_of_files_in_directory(navPath) - 1);
+			LocalMeshes = static_cast<int>(number_of_files_in_directory(navPath));
 			_init = true;
 
 			if (AutoCheckForUpdates)
