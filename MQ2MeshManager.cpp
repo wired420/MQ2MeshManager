@@ -1651,7 +1651,6 @@ PLUGIN_API void OnUpdateImGui()
 						ImGui::TextColored(ImVec4(0, 1, 1, 1), ICON_FA_DOWNLOAD);
 						ImGui::SameLine();
 						ImGui::Text("Remote Meshes: %d", RemoteMeshes);
-						//ImGui::SameLine();
 						ImGui::SameLine(0.0f, 20.0f);
 						ImGui::TextColored(ImVec4(0, 1, 1, 1), ICON_FA_FILE);
 						ImGui::SameLine();
