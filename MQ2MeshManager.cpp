@@ -78,10 +78,10 @@ std::list<HashListStorage> HashpipeList;
 std::vector<std::string> IgnoreList;
 bool fDownloadReady = false;
 bool fHashReady = false;
-unsigned short int HideProgress = 1;
+int HideProgress = 1;
 fs::path navPath = fs::path(gPathResources) / "MQ2Nav";
-unsigned short DownloadThreads = 0, MaxDownloadThreads = 4;
-unsigned short HashThreads = 0, MaxHashThreads = 4;
+int DownloadThreads = 0, MaxDownloadThreads = 4;
+int HashThreads = 0, MaxHashThreads = 4;
 bool ThreadSafe = true;
 int ThreadLockSeconds = 20;
 bool AutoDownloadMissing = false, AutoCheckForUpdates = false;
@@ -1646,30 +1646,27 @@ PLUGIN_API void OnUpdateImGui()
 				{
 					if (ImGui::BeginTabItem("General"))
 					{
-						ImGui::Dummy(ImVec2(0, 2.5f));
+						ImGui::Spacing();
 						ImGui::BeginGroup();
 						ImGui::TextColored(ImVec4(0, 1, 1, 1), ICON_FA_DOWNLOAD);
 						ImGui::SameLine();
 						ImGui::Text("Remote Meshes: %d", RemoteMeshes);
-						ImGui::SameLine();
-						ImGui::Dummy(ImVec2(8.0f, 0));
-						ImGui::SameLine();
+						//ImGui::SameLine();
+						ImGui::SameLine(0.0f, 20.0f);
 						ImGui::TextColored(ImVec4(0, 1, 1, 1), ICON_FA_FILE);
 						ImGui::SameLine();
 						ImGui::Text("Local Meshes: %d", LocalMeshes);
 						ImGui::EndGroup();
-						ImGui::Dummy(ImVec2(0, 2.5f));
+						ImGui::Spacing();
 						ImGui::Separator();
-						ImGui::Dummy(ImVec2(0, 5.0f));
+						ImGui::Spacing();
 						ImGui::BeginGroup();
 						ImGui::Text("Updates:");
-						ImGui::Dummy(ImVec2(0, 2.5f));
 						if (ImGui::Button("Update Database"))
 						{
 							MeshUpdateDatabase();
 						}
 						ImGui::SameLine();
-						ImGui::Dummy(ImVec2(5.0f, 0));
 						if (!fDownloadReady)
 						{
 							ImGui::SameLine();
@@ -1678,7 +1675,6 @@ PLUGIN_API void OnUpdateImGui()
 								MeshManagerUpdateZone(GetShortZone(pLocalPC->zoneId));
 							}
 							ImGui::SameLine();
-							ImGui::Dummy(ImVec2(5.0f, 0));
 							ImGui::SameLine();
 							if (ImGui::Button("Update All"))
 							{
@@ -1687,18 +1683,17 @@ PLUGIN_API void OnUpdateImGui()
 							}
 						}
 						ImGui::EndGroup();
-						ImGui::Dummy(ImVec2(0, 5.0f));
+						ImGui::Spacing();
 						ImGui::Separator();
-						ImGui::Dummy(ImVec2(0, 5.0f));
+						ImGui::Spacing();
 						ImGui::BeginGroup();
 						ImGui::Text("Quick Zone Ignore (Current Zone: %s)", GetShortZone(pLocalPC->zoneId));
-						ImGui::Dummy(ImVec2(0, 2.5f));
 						if (ImGui::Button("Add"))
 						{
 							MeshManagerIgnore("add", GetShortZone(pLocalPC->zoneId));
 						}
 						ImGui::SameLine();
-						ImGui::Dummy(ImVec2(0, 2.5f));
+
 						ImGui::SameLine();
 						if (ImGui::Button("Delete"))
 						{
@@ -1724,9 +1719,7 @@ PLUGIN_API void OnUpdateImGui()
 							}
 							ImGui::ListBoxFooter();
 						}
-						ImGui::Dummy(ImVec2(0, 20.0f));
 						ImGui::Separator();
-						ImGui::Dummy(ImVec2(0, 20.0f));
 						ImGui::Text("Select To Add");
 						static const char* item_current = Zones[0];
 						if (ImGui::BeginCombo("Add Zone", item_current, ImGuiComboFlags_HeightRegular))
@@ -1746,58 +1739,42 @@ PLUGIN_API void OnUpdateImGui()
 					}
 					if (ImGui::BeginTabItem("Settings"))
 					{
-						int valueMaxDownloads = MaxDownloadThreads;
-						int valueMaxHashes = MaxHashThreads;
 						int valueMissing = (AutoDownloadMissing) ? 1 : 0;
-						bool changedMaxDownloads = false;
-						bool changedMaxHashes = false;
-						bool changedMissingRadios = false;
-						ImGui::Dummy(ImVec2(0, 2.5f));
-						valueMaxDownloads, changedMaxDownloads = ImGui::SliderInt("Max Downloads", &valueMaxDownloads, 1, 10);
+						bool changedMaxDownloads = false, changedMaxHashes = false, changedMissingRadios = false;
+						bool missingChanged = false, autoupdateChanged = false, progressChanged = false;
+						bool threadsafetyChanged = false;
+						bool autoUpdate = (HideProgress) ? 0 : 1;
+
+						changedMaxDownloads = ImGui::SliderInt("Max Downloads", &MaxDownloadThreads, 1, 10);
 						if (changedMaxDownloads)
 						{
-							MaxDownloadThreads = valueMaxDownloads;
 							MeshManagerSaveSettings();
 						}
-						ImGui::Dummy(ImVec2(0, 2.5f));
-						valueMaxHashes, changedMaxHashes = ImGui::SliderInt("Max Hashes", &valueMaxHashes, 1, 10);
+						changedMaxHashes = ImGui::SliderInt("Max Hashes", &MaxHashThreads, 1, 10);
 						if (changedMaxHashes)
 						{
-							MaxHashThreads = valueMaxHashes;
 							MeshManagerSaveSettings();
 						}
-						ImGui::Dummy(ImVec2(0, 2.5f));
-						bool missingChanged = false;
 						missingChanged = ImGui::Checkbox("Auto Download Missing", &AutoDownloadMissing);
 						if (missingChanged)
 						{
 							MeshManagerSaveSettings();
 						}
-						ImGui::Dummy(ImVec2(0, 2.5f));
-						bool autoupdateChanged = false;
 						autoupdateChanged = ImGui::Checkbox("Auto Update At Login", &AutoCheckForUpdates);
 						if (autoupdateChanged)
 						{
 							MeshManagerSaveSettings();
 						}
-						ImGui::Dummy(ImVec2(0, 2.5f));
-						bool progressChanged = false;
-						bool autoUpdate = (HideProgress) ? 0 : 1;
 						progressChanged = ImGui::Checkbox("Show Download Progress", &autoUpdate);
 						if (progressChanged)
 						{
 							if (autoUpdate)
-							{
 								HideProgress = 0;
-							}
 							else
-							{
 								HideProgress = 1;
-							}
+
 							MeshManagerSaveSettings();
 						}
-						ImGui::Dummy(ImVec2(0, 2.5f));
-						bool threadsafetyChanged = false;
 						threadsafetyChanged = ImGui::Checkbox("Thread Safety", &ThreadSafe);
 						if (threadsafetyChanged)
 						{
