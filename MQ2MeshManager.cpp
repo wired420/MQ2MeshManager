@@ -199,6 +199,10 @@ void Get_Hash_For_Update(const struct HashListStorage& tmp)
 			DownloadList.push_back(tmpDownloadList);
 			HashThreads--;
 		}
+		else
+		{
+			HashThreads--;
+		}
 	}
 	else
 	{
