@@ -449,6 +449,10 @@ void MeshDownloadFile(const std::string& url, const std::string& filename, const
 			fCurrentDL = "none";
 			fPathDL = "none";
 			fDownloading = false;
+			if (DownloadThreads == 0 && !fDownloadReady)
+			{
+				MeshWriteChat("\agAll downloads complete.", true);
+			}
 		}
 	}
 }
@@ -1605,8 +1609,7 @@ PLUGIN_API void OnPulse() {
 			}
 			else
 			{
-				MeshWriteChat("\agAll downloads complete or in progress.", true);
-				LocalMeshes = static_cast<int>(number_of_files_in_directory(navPath) - 1);
+				LocalMeshes = static_cast<int>(number_of_files_in_directory(navPath));
 				fDownloadReady = false;
 			}
 		}
