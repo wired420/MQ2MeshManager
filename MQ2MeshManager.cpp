@@ -14,6 +14,8 @@
  // are shown below. Remove the ones your plugin does not use.  Always use Initialize
  // and Shutdown for setup and cleanup.
 #include <bitset>
+#include <cerrno>
+#include <cstring>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -47,12 +49,13 @@
 // MQ Stuff
 #include <mq/Plugin.h>
 #include "Prototypes.h"
+#include <imgui/fonts/IconsFontAwesome.h>
 
 using json = nlohmann::json;
 namespace fs = std::filesystem;
 
 PreSetup("MQ2MeshManager");
-PLUGIN_VERSION(1.1);
+PLUGIN_VERSION(2.0);
 
 /**
  * GLOBALS
@@ -60,7 +63,7 @@ PLUGIN_VERSION(1.1);
  * Avoid Globals if at all possible, since they persist throughout your program.
  * But if you must have them, here is the place to put them.
  */
-static const std::string MeshPluginVersion = "1.11b";
+static const std::string MeshPluginVersion = "2.0";
 bool fAgree = false;
 static std::chrono::steady_clock::time_point PulseTimer = std::chrono::steady_clock::now();
 static std::chrono::steady_clock::time_point DownloadThreadTimer = std::chrono::steady_clock::now();
@@ -84,14 +87,20 @@ int ThreadLockSeconds = 20;
 bool AutoDownloadMissing = false, AutoCheckForUpdates = false;
 bool _init = false;
 int MaxZone = 546;
-std::string Zones[546] = { "aalishai", "abysmal", "acrylia", "airplane", "akanon", "akheva", "akhevatwo", "alkabormare", "anguish", "arcstone", "arelis", "arena", "argath", "arginhiz", "arthicrex", "arxmentis", "ashengate", "atiiki", "barindu", "barren", "basilica", "bazaar", "beastdomain", "befallen", "beholder", "bertoxtemple", "bixiewarfront", "blackburrow", "blacksail", "bloodfalls", "bloodfields", "bloodmoon", "bothunder", "breedinggrounds", "brellsarena", "brellsrest", "brellstemple", "broodlands", "brotherisland", "buriedsea", "burningwood", "butcher", "cabeast", "cabwest", "cauldron", "causeway", "cazicthule", "chamberoftears", "chambersa", "chambersb", "chambersc", "chambersd", "chamberse", "chambersf", "chapterhouse", "charasisb", "charasis", "charasistwo", "chardokb", "chardok", "chardoktwo", "chelsithreborn", "citymist", "cityofbronze", "cobaltscar", "cobaltscartwo", "codecayb", "codecay", "commonlands", "convorteum", "coolingchamber", "corathusa", "corathusb", "corathus", "cosul", "crescent", "crushbone", "cryptofshade", "crystallos", "crystal", "crystalshard", "crystaltwoa", "crystaltwob", "dalnir", "darklightcaverns", "dawnshroud", "deadbone", "deadhills", "deepshade", "degmar", "delvea", "delveb", "devastationa", "devastation", "direwind", "discord", "discordtower", "drachnidhivea", "drachnidhiveb", "drachnidhivec", "drachnidhive", "dragoncrypt", "dragonscalea", "dragonscaleb", "dragonscale", "dranikcatacombsa", "dranikcatacombsb", "dranikcatacombsc", "dranikhollowsa", "dranikhollowsb", "dranikhollowsc", "dranik", "draniksewersa", "draniksewersb", "draniksewersc", "draniksscar", "dreadlands", "dreadspire", "dredge", "drogab", "droga", "dulak", "eastkarana", "eastkorlacha", "eastkorlach", "eastsepulcher", "eastwastes", "eastwastesshard", "eastwastestwo", "echo", "elddara", "elddar", "emeraldjungle", "empyr", "endlesscaverns", "erudnext", "erudnint", "erudsxing", "esianti", "ethernere", "everfrost", "eviltree", "exaltedb", "exalted", "fallen", "fearplane", "feerrott2", "feerrott", "felwithea", "felwitheb", "ferubi", "fhalls", "fieldofbone", "firefallpass", "firiona", "foundation", "freeportacademy", "freeportarena", "freeportcityhall", "freeporteast", "freeporthall", "freeportmilitia", "freeportsewers", "freeporttheater", "freeportwest", "freporte", "freportn", "freportw", "frontiermtnsb", "frontiermtns", "frostcrypt", "frozenshadow", "frozenshadowtwo", "fungalforest", "fungusgrove", "gfaydark", "gnomemtn", "gorowyn", "greatdivide", "greatdividetwo", "grelleth", "griegsend", "grimling", "grobb", "growthplane", "guardian", "guildhall3", "guildhalllrg", "guildhall", "guildhallsml", "guildlobby", "guka", "gukb", "gukbottom", "gukc", "gukd", "guke", "gukf", "gukg", "gukh", "guktop", "gunthak", "gyrospireb", "gyrospirez", "halas", "harbingers", "hateplaneb", "hateplane", "hatesfury", "heartoffearb", "heartoffearc", "heartoffear", "highkeep", "highpasshold", "hillsofshade", "hohonora", "hohonorb", "hole", "hollowshade", "hollowshadetwo", "housegarden", "iceclad", "icefall", "ikkinz", "illsalina", "illsalinb", "illsalinc", "illsalin", "inktuta", "innothuleb", "jaggedpine", "jardelshook", "kael", "kaelshard", "kaeltwo", "kaesora", "kaladima", "kaladimb", "karnor", "kattacastrumb", "kattacastrum", "katta", "kedge", "kithicor", "kodtaz", "korascian", "korshaext", "korshaint", "kurn", "lakeofillomen", "lakerathe", "lavastorm", "lceanium", "letalis", "lfaydark", "lichencreep", "lopingplains", "maidenhouseint", "maiden", "maidensgrave", "maidentwo", "mansion", "mearatas", "mechanotus", "mesa", "miragulmare", "mira", "mirb", "mirc", "mird", "mire", "mirf", "mirg", "mirh", "miri", "mirj", "mischiefplane", "mistmoore", "mistythicket", "mmca", "mmcb", "mmcc", "mmcd", "mmce", "mmcf", "mmcg", "mmch", "mmci", "mmcj", "monkeyrock", "moors", "morellcastle", "mseru", "nadox", "najena", "natimbi", "necropolis", "necropolistwo", "nedaria", "neighborhood", "nektulosa", "nektulos", "neriaka", "neriakb", "neriakc", "neriakd", "netherbian", "nexus", "nightmareb", "northkarana", "northro", "nro", "nurga", "oceangreenhills", "oceangreenvillage", "oceanoftears", "oggok", "oldblackburrow", "oldbloodfield", "oldcommons", "olddranik", "oldfieldofboneb", "oldfieldofbone", "oldkaesoraa", "oldkaesorab", "oldkithicor", "oldkurn", "overthere", "overtheretwo", "paineel", "paludal", "paludaltwo", "paw", "pellucid", "permafrost", "phinteriortree", "phylactery", "pillarsalra", "plhdkeinteriors1a1", "plhdkeinteriors1a2", "plhdkeinteriors1a3", "plhdkeinteriors3a1", "plhdkeinteriors3a2", "plhdkeinteriors3a3", "plhogrinteriors1a1", "plhogrinteriors1a2", "plhogrinteriors3a1", "plhogrinteriors3a2", "plhogrinteriors3b1", "plhogrinteriors3b2", "poair", "podisease", "poeartha", "poearthb", "pofire", "pohealth", "poinnovation", "pojustice", "poknowledge", "ponightmare", "poshadow", "postorms", "potactics", "potimea", "potimeb", "potorment", "potranquility", "povalor", "powar", "powater", "precipiceofwar", "provinggrounds", "qcat", "qey2hh1", "qeynos2", "qeynos", "qeytoqrg", "qinimi", "qrg", "qvic", "ragea", "rage", "rathechamber", "rathemtn", "redfeather", "relic", "resplendent", "riftseekers", "rivervale", "riwwi", "roost", "rubak", "ruja", "rujb", "rujc", "rujd", "ruje", "rujf", "rujg", "rujh", "ruji", "rujj", "runnyeye", "sarithcity", "scarlet", "scorchedwoods", "sebilis", "sepulcher", "shadeweaver", "shadeweavertwo", "shadowedmount", "shadowhaven", "shadowhaventwo", "shadowrest", "shadowspine", "shadowvalley", "shardslanding", "sharvahl", "sharvahltwo", "shiningcity", "shipmvm", "shipmvp", "shipmvu", "shippvu", "shipuvu", "shipworkshop", "silyssar", "sirens", "skyfire", "skyfiretwo", "skylance", "skyshrine", "skyshrinetwo", "sleeper", "sleepertwo", "sncrematory", "snlair", "snplant", "snpool", "soldunga", "soldungb", "soldungc", "solrotower", "soltemple", "solteris", "somnium", "southkarana", "southro", "sseru", "ssratemple", "steamfactory", "steamfontmts", "steppes", "stillmoona", "stillmoonb", "stonebrunt", "stonehive", "stonesnake", "stratos", "suncrest", "sunderock", "swampofnohope", "tacvi", "taka", "takb", "takc", "takd", "take", "takf", "takg", "takh", "taki", "takishruinsa", "takishruins", "takj", "tempesttemple", "templeveeshan", "templeveeshantwo", "tenebrous", "thalassius", "theatera", "theater", "thedeep", "thegrey", "thenest", "thevoida", "thevoidb", "thevoidc", "thevoidd", "thevoide", "thevoidf", "thevoidg", "thevoidh", "thuledream", "thulehouse1", "thulehouse2", "thulelibrary", "thuliasaur", "thundercrest", "thurgadina", "thurgadinb", "timorous", "tipt", "torgiran", "toskirakk", "towerofrot", "toxxulia", "trakanon", "trialsofsmoke", "tutoriala", "tutorialb", "twilight", "txevu", "umbral", "umbraltwo", "underquarry", "unrest", "uqua", "valdeholm", "veeshan", "veeshantwo", "veksar", "velketor", "velketortwo", "vergalid", "vexthal", "vexthaltwo", "vxed", "wakening", "wallofslaughter", "warrens", "warslikswood", "weddingchapeldark", "weddingchapel", "well", "westkorlacha", "westkorlachb", "westkorlachc", "westkorlach", "westsepulcher", "westwastes", "westwastestwo", "windsong", "xorbb", "yxtta", "zhisza" };
+static const char* Zones[546] = { "aalishai", "abysmal", "acrylia", "airplane", "akanon", "akheva", "akhevatwo", "alkabormare", "anguish", "arcstone", "arelis", "arena", "argath", "arginhiz", "arthicrex", "arxmentis", "ashengate", "atiiki", "barindu", "barren", "basilica", "bazaar", "beastdomain", "befallen", "beholder", "bertoxtemple", "bixiewarfront", "blackburrow", "blacksail", "bloodfalls", "bloodfields", "bloodmoon", "bothunder", "breedinggrounds", "brellsarena", "brellsrest", "brellstemple", "broodlands", "brotherisland", "buriedsea", "burningwood", "butcher", "cabeast", "cabwest", "cauldron", "causeway", "cazicthule", "chamberoftears", "chambersa", "chambersb", "chambersc", "chambersd", "chamberse", "chambersf", "chapterhouse", "charasisb", "charasis", "charasistwo", "chardokb", "chardok", "chardoktwo", "chelsithreborn", "citymist", "cityofbronze", "cobaltscar", "cobaltscartwo", "codecayb", "codecay", "commonlands", "convorteum", "coolingchamber", "corathusa", "corathusb", "corathus", "cosul", "crescent", "crushbone", "cryptofshade", "crystallos", "crystal", "crystalshard", "crystaltwoa", "crystaltwob", "dalnir", "darklightcaverns", "dawnshroud", "deadbone", "deadhills", "deepshade", "degmar", "delvea", "delveb", "devastationa", "devastation", "direwind", "discord", "discordtower", "drachnidhivea", "drachnidhiveb", "drachnidhivec", "drachnidhive", "dragoncrypt", "dragonscalea", "dragonscaleb", "dragonscale", "dranikcatacombsa", "dranikcatacombsb", "dranikcatacombsc", "dranikhollowsa", "dranikhollowsb", "dranikhollowsc", "dranik", "draniksewersa", "draniksewersb", "draniksewersc", "draniksscar", "dreadlands", "dreadspire", "dredge", "drogab", "droga", "dulak", "eastkarana", "eastkorlacha", "eastkorlach", "eastsepulcher", "eastwastes", "eastwastesshard", "eastwastestwo", "echo", "elddara", "elddar", "emeraldjungle", "empyr", "endlesscaverns", "erudnext", "erudnint", "erudsxing", "esianti", "ethernere", "everfrost", "eviltree", "exaltedb", "exalted", "fallen", "fearplane", "feerrott2", "feerrott", "felwithea", "felwitheb", "ferubi", "fhalls", "fieldofbone", "firefallpass", "firiona", "foundation", "freeportacademy", "freeportarena", "freeportcityhall", "freeporteast", "freeporthall", "freeportmilitia", "freeportsewers", "freeporttheater", "freeportwest", "freporte", "freportn", "freportw", "frontiermtnsb", "frontiermtns", "frostcrypt", "frozenshadow", "frozenshadowtwo", "fungalforest", "fungusgrove", "gfaydark", "gnomemtn", "gorowyn", "greatdivide", "greatdividetwo", "grelleth", "griegsend", "grimling", "grobb", "growthplane", "guardian", "guildhall3", "guildhalllrg", "guildhall", "guildhallsml", "guildlobby", "guka", "gukb", "gukbottom", "gukc", "gukd", "guke", "gukf", "gukg", "gukh", "guktop", "gunthak", "gyrospireb", "gyrospirez", "halas", "harbingers", "hateplaneb", "hateplane", "hatesfury", "heartoffearb", "heartoffearc", "heartoffear", "highkeep", "highpasshold", "hillsofshade", "hohonora", "hohonorb", "hole", "hollowshade", "hollowshadetwo", "housegarden", "iceclad", "icefall", "ikkinz", "illsalina", "illsalinb", "illsalinc", "illsalin", "inktuta", "innothuleb", "jaggedpine", "jardelshook", "kael", "kaelshard", "kaeltwo", "kaesora", "kaladima", "kaladimb", "karnor", "kattacastrumb", "kattacastrum", "katta", "kedge", "kithicor", "kodtaz", "korascian", "korshaext", "korshaint", "kurn", "lakeofillomen", "lakerathe", "lavastorm", "lceanium", "letalis", "lfaydark", "lichencreep", "lopingplains", "maidenhouseint", "maiden", "maidensgrave", "maidentwo", "mansion", "mearatas", "mechanotus", "mesa", "miragulmare", "mira", "mirb", "mirc", "mird", "mire", "mirf", "mirg", "mirh", "miri", "mirj", "mischiefplane", "mistmoore", "mistythicket", "mmca", "mmcb", "mmcc", "mmcd", "mmce", "mmcf", "mmcg", "mmch", "mmci", "mmcj", "monkeyrock", "moors", "morellcastle", "mseru", "nadox", "najena", "natimbi", "necropolis", "necropolistwo", "nedaria", "neighborhood", "nektulosa", "nektulos", "neriaka", "neriakb", "neriakc", "neriakd", "netherbian", "nexus", "nightmareb", "northkarana", "northro", "nro", "nurga", "oceangreenhills", "oceangreenvillage", "oceanoftears", "oggok", "oldblackburrow", "oldbloodfield", "oldcommons", "olddranik", "oldfieldofboneb", "oldfieldofbone", "oldkaesoraa", "oldkaesorab", "oldkithicor", "oldkurn", "overthere", "overtheretwo", "paineel", "paludal", "paludaltwo", "paw", "pellucid", "permafrost", "phinteriortree", "phylactery", "pillarsalra", "plhdkeinteriors1a1", "plhdkeinteriors1a2", "plhdkeinteriors1a3", "plhdkeinteriors3a1", "plhdkeinteriors3a2", "plhdkeinteriors3a3", "plhogrinteriors1a1", "plhogrinteriors1a2", "plhogrinteriors3a1", "plhogrinteriors3a2", "plhogrinteriors3b1", "plhogrinteriors3b2", "poair", "podisease", "poeartha", "poearthb", "pofire", "pohealth", "poinnovation", "pojustice", "poknowledge", "ponightmare", "poshadow", "postorms", "potactics", "potimea", "potimeb", "potorment", "potranquility", "povalor", "powar", "powater", "precipiceofwar", "provinggrounds", "qcat", "qey2hh1", "qeynos2", "qeynos", "qeytoqrg", "qinimi", "qrg", "qvic", "ragea", "rage", "rathechamber", "rathemtn", "redfeather", "relic", "resplendent", "riftseekers", "rivervale", "riwwi", "roost", "rubak", "ruja", "rujb", "rujc", "rujd", "ruje", "rujf", "rujg", "rujh", "ruji", "rujj", "runnyeye", "sarithcity", "scarlet", "scorchedwoods", "sebilis", "sepulcher", "shadeweaver", "shadeweavertwo", "shadowedmount", "shadowhaven", "shadowhaventwo", "shadowrest", "shadowspine", "shadowvalley", "shardslanding", "sharvahl", "sharvahltwo", "shiningcity", "shipmvm", "shipmvp", "shipmvu", "shippvu", "shipuvu", "shipworkshop", "silyssar", "sirens", "skyfire", "skyfiretwo", "skylance", "skyshrine", "skyshrinetwo", "sleeper", "sleepertwo", "sncrematory", "snlair", "snplant", "snpool", "soldunga", "soldungb", "soldungc", "solrotower", "soltemple", "solteris", "somnium", "southkarana", "southro", "sseru", "ssratemple", "steamfactory", "steamfontmts", "steppes", "stillmoona", "stillmoonb", "stonebrunt", "stonehive", "stonesnake", "stratos", "suncrest", "sunderock", "swampofnohope", "tacvi", "taka", "takb", "takc", "takd", "take", "takf", "takg", "takh", "taki", "takishruinsa", "takishruins", "takj", "tempesttemple", "templeveeshan", "templeveeshantwo", "tenebrous", "thalassius", "theatera", "theater", "thedeep", "thegrey", "thenest", "thevoida", "thevoidb", "thevoidc", "thevoidd", "thevoide", "thevoidf", "thevoidg", "thevoidh", "thuledream", "thulehouse1", "thulehouse2", "thulelibrary", "thuliasaur", "thundercrest", "thurgadina", "thurgadinb", "timorous", "tipt", "torgiran", "toskirakk", "towerofrot", "toxxulia", "trakanon", "trialsofsmoke", "tutoriala", "tutorialb", "twilight", "txevu", "umbral", "umbraltwo", "underquarry", "unrest", "uqua", "valdeholm", "veeshan", "veeshantwo", "veksar", "velketor", "velketortwo", "vergalid", "vexthal", "vexthaltwo", "vxed", "wakening", "wallofslaughter", "warrens", "warslikswood", "weddingchapeldark", "weddingchapel", "well", "westkorlacha", "westkorlachb", "westkorlachc", "westkorlach", "westsepulcher", "westwastes", "westwastestwo", "windsong", "xorbb", "yxtta", "zhisza" };
 std::error_code ec;
 std::stringstream jParse;
 json MeshDatabase = json::array();
 json SettingsDatabase = json::array();
 json IgnoreDatabase = json::array();
-std::mutex _dlMutex;
-std::mutex _igMutex;
+int RemoteMeshes = 0, LocalMeshes = 0;
+
+
+/*
+ * UI GLOBALS
+ */
+bool ShowMeshManagerWindow = false;
+bool already_clicked = false;
 
 /**
  * STRUCTURES
@@ -158,8 +167,16 @@ void Get_Hash_For_Update(const struct HashListStorage& tmp)
 		DownloadListStorage tmpDownloadList;
 		std::string str;
 		std::string out;
+		std::string theFile = fmt::format("{}{}", tmp.FilePath, tmp.FileName);
 
-		CryptoPP::FileSource file(tmp.FilePath.c_str(), true, new CryptoPP::StringSink(str));
+		try
+		{
+			CryptoPP::FileSource file(theFile.c_str(), true, new CryptoPP::StringSink(str));
+		}
+		catch (CryptoPP::FileStore::OpenErr const&)
+		{
+			MeshWriteChat(fmt::format("\arHashing Error:\aw {}", strerror(errno)), false);
+		}
 
 		if (tmp.HashType == "md5")
 		{
@@ -229,14 +246,17 @@ bool InGameAndSpawned()
 
 bool ValidateZoneShortName(const std::string& shortname)
 {
-	int i = 0;
-	while (!Zones[i].empty())
+	for (int i = 0; i < MaxZone; i++)
 	{
 		if (mq::ci_equals(Zones[i], shortname))
 			return true;
-		i++;
 	}
 	return false;
+}
+
+std::size_t number_of_files_in_directory(std::filesystem::path path)
+{
+	return (std::size_t)std::distance(std::filesystem::directory_iterator{ path }, std::filesystem::directory_iterator{});
 }
 
 /**
@@ -281,6 +301,7 @@ void MeshLoadDatabase()
 			MeshDatabase.clear();
 			try {
 				MeshDatabase = json::parse(jFile);
+				RemoteMeshes = static_cast<int>(MeshDatabase.size());
 			}
 			catch (json::parse_error& e)
 			{
@@ -353,7 +374,8 @@ void MeshDownloadFile(const std::string& url, const std::string& filename, const
 		pm.Thread = std::to_string(DownloadThreads);
 
 		errno_t fw = fopen_s(&fp, FinalPath.c_str(), "wb");
-		if (fw != 0)
+		// 13 = File locked for write access (Another client already has it)
+		if (fw != 0 && fw != 13)
 		{
 			char errstr[3]{};
 			sprintf_s(errstr, "%d", fw);
@@ -363,6 +385,20 @@ void MeshDownloadFile(const std::string& url, const std::string& filename, const
 			}
 			MeshWriteChat(fmt::format("\arError opening\aw {} \arfor writing. \a-r[\arError\aw: {}\a-r]", filename, errstr), false);
 			curl_easy_cleanup(curl);
+			fCurrentDL = "none";
+			fPathDL = "none";
+			fDownloading = false;
+		}
+		else if (fw == 13)
+		{
+			if (DownloadThreads > 0)
+			{
+				DownloadThreads--;
+			}
+			curl_easy_cleanup(curl);
+			fCurrentDL = "none";
+			fPathDL = "none";
+			fDownloading = false;
 		}
 		else
 		{
@@ -657,7 +693,7 @@ void MeshManagerIgnore(const std::string& Param2, const std::string& Param3)
 			}
 			else
 			{
-				MeshWriteChat(fmt::format("Zone {} already exists in the ignore list.", zonename), false);
+				MeshWriteChat(fmt::format("\arZone\aw {} \aralready exists in the ignore list.", zonename), false);
 			}
 		}
 		else
@@ -674,7 +710,7 @@ void MeshManagerIgnore(const std::string& Param2, const std::string& Param3)
 				}
 				else
 				{
-					MeshWriteChat(fmt::format("Zone {} already exists in the ignore list.", p3), false);
+					MeshWriteChat(fmt::format("\arZone\aw {} \aralready exists in the ignore list.", p3), false);
 				}
 			}
 			else
@@ -980,6 +1016,19 @@ void MeshManager(SPAWNINFO* pChar, char* szLine)
 						return;
 					}
 				}
+			}
+		}
+		else if (mq::ci_equals(Param1, "ui"))
+		{
+			if (ShowMeshManagerWindow)
+			{
+				MeshWriteChat("Closing User Interface.", false);
+				ShowMeshManagerWindow = false;
+			}
+			else
+			{
+				MeshWriteChat("Opening User Interface.", false);
+				ShowMeshManagerWindow = true;
 			}
 		}
 		else if (mq::ci_equals(Param1, "updatedb"))
@@ -1334,18 +1383,6 @@ PLUGIN_API void InitializePlugin() {
 		fs::create_directory(fPath, ec);
 	}
 
-	fPath = fs::path(gPathResources) / "MQ2MeshManager" / "confirmed.txt";
-	if (!fs::exists(fPath, ec))
-	{
-		MeshWriteChat("\arYou have not yet accepted the user agreement. Please type \aw/mesh agree\ar for more information.", true);
-	}
-	else
-	{
-		fAgree = true;
-	}
-
-	MeshLoadDatabase();
-	MeshManagerLoadIgnores();
 	AddCommand("/mesh", MeshManager);
 	AddMQ2Data("MeshManaager", DataMeshManager);
 }
@@ -1421,11 +1458,24 @@ PLUGIN_API void SetGameState(int GameState)
 		{
 			MeshManagerLoadSettings();
 			MeshManagerLoadIgnores();
+			MeshLoadDatabase();
+
+			fs::path fPath = fs::path(gPathResources) / "MQ2MeshManager" / "confirmed.txt";
+			if (!fs::exists(fPath, ec))
+			{
+				MeshWriteChat("\arYou have not yet accepted the user agreement. Please type \aw/mesh agree\ar for more information.", true);
+			}
+			else
+			{
+				fAgree = true;
+			}
+			LocalMeshes = static_cast<int>(number_of_files_in_directory(navPath) - 1);
 			_init = true;
 
 			if (AutoCheckForUpdates)
 			{
-				DoCommand(nullptr, "/mesh updateall confirm");
+				DoCommand(nullptr, "/mesh updatedb");
+				DoCommand(nullptr, "/timed 10 /mesh updateall confirm");
 			}
 		}
 	}
@@ -1540,6 +1590,7 @@ PLUGIN_API void OnPulse() {
 			else
 			{
 				MeshWriteChat("\agAll downloads complete or in progress.", true);
+				LocalMeshes = static_cast<int>(number_of_files_in_directory(navPath) - 1);
 				fDownloadReady = false;
 			}
 		}
@@ -1584,21 +1635,180 @@ PLUGIN_API void OnZoned()
  */
 PLUGIN_API void OnUpdateImGui()
 {
-	/*
-		if (GetGameState() == GAMESTATE_INGAME)
+	if (GetGameState() == GAMESTATE_INGAME)
+	{
+		if (ShowMeshManagerWindow)
 		{
-			if (ShowMQ2MeshManagerWindow)
+			if (ImGui::Begin("Mesh Manager", &ShowMeshManagerWindow, ImGuiWindowFlags_None))
 			{
-				if (ImGui::Begin("MQ2MeshManager", &ShowMQ2MeshManagerWindow, ImGuiWindowFlags_MenuBar))
+				if (ImGui::BeginTabBar("MeshManagerTabs", ImGuiTabBarFlags_None))
 				{
-					if (ImGui::BeginMenuBar())
+					if (ImGui::BeginTabItem("General"))
 					{
-						ImGui::Text("MQ2MeshManager is loaded!");
-						ImGui::EndMenuBar();
+						ImGui::Dummy(ImVec2(0, 2.5f));
+						ImGui::BeginGroup();
+						ImGui::TextColored(ImVec4(0, 1, 1, 1), ICON_FA_DOWNLOAD);
+						ImGui::SameLine();
+						ImGui::Text("Remote Meshes: %d", RemoteMeshes);
+						ImGui::SameLine();
+						ImGui::Dummy(ImVec2(8.0f, 0));
+						ImGui::SameLine();
+						ImGui::TextColored(ImVec4(0, 1, 1, 1), ICON_FA_FILE);
+						ImGui::SameLine();
+						ImGui::Text("Local Meshes: %d", LocalMeshes);
+						ImGui::EndGroup();
+						ImGui::Dummy(ImVec2(0, 2.5f));
+						ImGui::Separator();
+						ImGui::Dummy(ImVec2(0, 5.0f));
+						ImGui::BeginGroup();
+						ImGui::Text("Updates:");
+						ImGui::Dummy(ImVec2(0, 2.5f));
+						if (ImGui::Button("Update Database"))
+						{
+							MeshUpdateDatabase();
+						}
+						ImGui::SameLine();
+						ImGui::Dummy(ImVec2(5.0f, 0));
+						if (!fDownloadReady)
+						{
+							ImGui::SameLine();
+							if (ImGui::Button("Update Zone"))
+							{
+								MeshManagerUpdateZone(GetShortZone(pLocalPC->zoneId));
+							}
+							ImGui::SameLine();
+							ImGui::Dummy(ImVec2(5.0f, 0));
+							ImGui::SameLine();
+							if (ImGui::Button("Update All"))
+							{
+								MeshWriteChat("Checking for available updates!", false);
+								MeshManagerUpdateAll("confirm", "");
+							}
+						}
+						ImGui::EndGroup();
+						ImGui::Dummy(ImVec2(0, 5.0f));
+						ImGui::Separator();
+						ImGui::Dummy(ImVec2(0, 5.0f));
+						ImGui::BeginGroup();
+						ImGui::Text("Quick Zone Ignore (Current Zone: %s)", GetShortZone(pLocalPC->zoneId));
+						ImGui::Dummy(ImVec2(0, 2.5f));
+						if (ImGui::Button("Add"))
+						{
+							MeshManagerIgnore("add", GetShortZone(pLocalPC->zoneId));
+						}
+						ImGui::SameLine();
+						ImGui::Dummy(ImVec2(0, 2.5f));
+						ImGui::SameLine();
+						if (ImGui::Button("Delete"))
+						{
+							MeshManagerIgnore("del", GetShortZone(pLocalPC->zoneId));
+						}
+						ImGui::EndGroup();
+						ImGui::EndTabItem();
 					}
+					if (ImGui::BeginTabItem("Ignore"))
+					{
+						ImGui::Text("Select To Remove");
+						if (ImGui::ListBoxHeader("Ignores", ImVec2(0, 0)))
+						{
+							for (auto i : IgnoreList)
+							{
+								if (i != "0")
+								{
+									if (ImGui::Selectable(i.c_str()))
+									{
+										MeshManagerIgnore("del", i);
+									}
+								}
+							}
+							ImGui::ListBoxFooter();
+						}
+						ImGui::Dummy(ImVec2(0, 20.0f));
+						ImGui::Separator();
+						ImGui::Dummy(ImVec2(0, 20.0f));
+						ImGui::Text("Select To Add");
+						static const char* item_current = Zones[0];
+						if (ImGui::BeginCombo("Add Zone", item_current, ImGuiComboFlags_HeightRegular))
+						{
+							already_clicked = true;
+							for (int i = 0; i < MaxZone; i++)
+							{
+								if (ImGui::Selectable(Zones[i]))
+								{
+									item_current = Zones[i];
+									MeshManagerIgnore("add", Zones[i]);
+								}
+							}
+							ImGui::EndCombo();
+						}
+						ImGui::EndTabItem();
+					}
+					if (ImGui::BeginTabItem("Settings"))
+					{
+						int valueMaxDownloads = MaxDownloadThreads;
+						int valueMaxHashes = MaxHashThreads;
+						int valueMissing = (AutoDownloadMissing) ? 1 : 0;
+						bool changedMaxDownloads = false;
+						bool changedMaxHashes = false;
+						bool changedMissingRadios = false;
+						ImGui::Dummy(ImVec2(0, 2.5f));
+						valueMaxDownloads, changedMaxDownloads = ImGui::SliderInt("Max Downloads", &valueMaxDownloads, 1, 10);
+						if (changedMaxDownloads)
+						{
+							MaxDownloadThreads = valueMaxDownloads;
+							MeshManagerSaveSettings();
+						}
+						ImGui::Dummy(ImVec2(0, 2.5f));
+						valueMaxHashes, changedMaxHashes = ImGui::SliderInt("Max Hashes", &valueMaxHashes, 1, 10);
+						if (changedMaxHashes)
+						{
+							MaxHashThreads = valueMaxHashes;
+							MeshManagerSaveSettings();
+						}
+						ImGui::Dummy(ImVec2(0, 2.5f));
+						bool missingChanged = false;
+						missingChanged = ImGui::Checkbox("Auto Download Missing", &AutoDownloadMissing);
+						if (missingChanged)
+						{
+							MeshManagerSaveSettings();
+						}
+						ImGui::Dummy(ImVec2(0, 2.5f));
+						bool autoupdateChanged = false;
+						autoupdateChanged = ImGui::Checkbox("Auto Update At Login", &AutoCheckForUpdates);
+						if (autoupdateChanged)
+						{
+							MeshManagerSaveSettings();
+						}
+						ImGui::Dummy(ImVec2(0, 2.5f));
+						bool progressChanged = false;
+						bool autoUpdate = (HideProgress) ? 0 : 1;
+						progressChanged = ImGui::Checkbox("Show Download Progress", &autoUpdate);
+						if (progressChanged)
+						{
+							if (autoUpdate)
+							{
+								HideProgress = 0;
+							}
+							else
+							{
+								HideProgress = 1;
+							}
+							MeshManagerSaveSettings();
+						}
+						ImGui::Dummy(ImVec2(0, 2.5f));
+						bool threadsafetyChanged = false;
+						threadsafetyChanged = ImGui::Checkbox("Thread Safety", &ThreadSafe);
+						if (threadsafetyChanged)
+						{
+							MeshManagerSaveSettings();
+						}
+						ImGui::EndTabItem();
+					}
+					ImGui::EndTabBar();
 				}
-				ImGui::End();
 			}
+			ImGui::End();
 		}
-	*/
+	}
 }
+
