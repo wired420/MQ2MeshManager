@@ -1316,7 +1316,7 @@ void MeshManagerMenu(const std::string& menu = "help")
 			MeshWriteChat("\arIgnore List Is Empty!", false);
 			return;
 		}
-		for (int i = 1; i < IgnoreList.size(); ++i)
+		for (int i = 1; i < static_cast<int>(IgnoreList.size()); ++i)
 		{
 			MeshWriteChat("\aw" + IgnoreList[i], false);
 		}
