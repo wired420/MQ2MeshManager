@@ -87,13 +87,13 @@ json IgnoreDatabase = json::array();
 int RemoteMeshes = 0, LocalMeshes = 0;
 
 /**
- * File Paths - We use them enough that we should stop building them over and over
+ * File Paths - We use them enough that we should stop building them over and over and over
  */
-fs::path ConfPath = fs::path(gPathConfig) / "MQ2MeshManager";
-fs::path NavPath = fs::path(gPathResources) / "MQ2Nav";
-fs::path ResPath = fs::path(gPathResources) / "MQ2MeshManager";
-fs::path DbPath = fs::path(ResPath) /  "meshdb.json";
-fs::path TmpPath = fs::path(ResPath) / "tmp";
+const fs::path ConfPath = fs::path(gPathConfig) / "MQ2MeshManager";
+const fs::path NavPath = fs::path(gPathResources) / "MQ2Nav";
+const fs::path ResPath = fs::path(gPathResources) / "MQ2MeshManager";
+const fs::path DbPath = fs::path(ResPath) /  "meshdb.json";
+const fs::path TmpPath = fs::path(ResPath) / "tmp";
 
 /*
  * UI GLOBALS
@@ -257,7 +257,7 @@ bool ValidateZoneShortName(const std::string& shortname)
 	return false;
 }
 
-unsigned int number_of_files_in_directory(std::filesystem::path& path, std::vector<std::string>& extension)
+int number_of_files_in_directory(std::filesystem::path path, std::vector<std::string> extension)
 {
 	unsigned int count = 0;
 	for (auto& p : fs::recursive_directory_iterator(path))
@@ -274,7 +274,7 @@ unsigned int number_of_files_in_directory(std::filesystem::path& path, std::vect
 }
 
 // Migration function. Used to quickly move files from Resources to Config.
-unsigned int move_multiple_files(std::filesystem::path& source, std::filesystem::path& destination, std::vector<std::string>& extensions, std::vector<std::string>& excludes)
+int move_multiple_files(std::filesystem::path source, std::filesystem::path destination, std::vector<std::string> extensions, std::vector<std::string> excludes)
 {
 	unsigned int count = 0;
 	for (auto& p : fs::recursive_directory_iterator(source))
@@ -294,7 +294,7 @@ unsigned int move_multiple_files(std::filesystem::path& source, std::filesystem:
 						}
 						else
 						{
-							MeshWriteChat(fmt::format("Error Moving File: {}", p.path().filename()), false);
+							MeshWriteChat(fmt::format("Error Moving File: {}", p.path().filename().string()), false);
 						}
 					}
 				}
@@ -1452,6 +1452,14 @@ PLUGIN_API void InitializePlugin() {
 	{
 		fs::create_directory(NavPath, ec);
 	}
+
+	// Migrates old configs to new location
+	int file_count = number_of_files_in_directory(ResPath, std::vector<std::string> { ".json", ".txt" });
+	if (file_count > 1)
+	{
+		move_multiple_files(ResPath, ConfPath, std::vector<std::string> { ".json", ".txt" }, std::vector<std::string> { "meshdb.json" });
+	}
+
 
 	AddCommand("/mesh", MeshManager);
 	AddMQ2Data("MeshManaager", DataMeshManager);
