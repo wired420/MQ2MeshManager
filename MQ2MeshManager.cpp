@@ -512,7 +512,10 @@ void MeshDownloadFile(const std::string& url, const std::string& filename, const
 			if (!filename.empty()) 
 			{
 				if (filename == "meshdb.json")
-					MeshLoadDatabase();
+					if (move_single_file(fs::path(_TmpPath), fs::path(FinalPath)))
+						MeshLoadDatabase();
+					else
+						MeshWriteChat("Error downloading new database file. Please try again.", false);
 				else if (filename.substr(filename.length() - 8, filename.length()) == ".navmesh")
 					move_single_file(fs::path(_TmpPath), fs::path(FinalPath));
 			}
