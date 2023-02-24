@@ -1,10 +1,19 @@
 #define CRYPTOPP_ENABLE_NAMESPACE_WEAK 1
- // MQ2MeshManager.cpp : Defines the entry point for the DLL application.
- //
-
- // PLUGIN_API is only to be used for callbacks.  All existing callbacks at this time
- // are shown below. Remove the ones your plugin does not use.  Always use Initialize
- // and Shutdown for setup and cleanup.
+ /** 
+  * MQ2MeshManager.cpp - Created by wired420 <Clayton Johnson, wired420@gmail.com>
+  * 
+  * MacroQuest plugin to access, and download from, the public repository of navigation
+  * meshes available at http://mqmesh.com. These navigation meshes are intended to be
+  * used in conjunction with MQ2Nav. This plugin contains functions for keeping these 
+  * navigation meshes up to date.
+  * 
+  * Plugin requires the following libraries as well as their windows dependencies to build: 
+  *  nlohmann/json, libcurl, cryptopp, zlib
+  * 
+  * Mainly created for http://redguides.com but anyone is free to use it or modify it as they
+  * see fit. There's no branding that would identify one site or another.
+  * 
+  */
 #include <bitset>
 #include <cerrno>
 #include <cstring>

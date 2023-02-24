@@ -1,5 +1,4 @@
 cryptopp
 curl
 nlohmann-json
-openssl
 zlib
