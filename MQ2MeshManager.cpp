@@ -166,7 +166,7 @@ void Get_Hash_For_Update(const struct HashListStorage& tmp)
 		DownloadListStorage tmpDownloadList;
 		std::string str;
 		std::string out;
-		std::string theFile = fmt::format("{}{}", tmp.FilePath, tmp.FileName);
+		std::string theFile = fmt::format("{}\\{}", tmp.FilePath, tmp.FileName);
 
 		try
 		{
@@ -257,7 +257,7 @@ bool ValidateZoneShortName(const std::string& shortname)
 	return false;
 }
 
-std::size_t number_of_files_in_directory(std::filesystem::path path)
+std::size_t number_of_files_in_directory(std::filesystem::path& path)
 {
 	int count = 0;
 	std::string extension(".navmesh");
@@ -272,6 +272,18 @@ std::size_t number_of_files_in_directory(std::filesystem::path path)
 	//return (std::size_t)std::distance(std::filesystem::directory_iterator{ path }, std::filesystem::directory_iterator{});
 }
 
+int move_files_in_directory(std::filesystem::path& source, std::filesystem::path& destination, std::string& extension)
+{
+	int FilesMoved = 0;
+	for (auto& p : fs::recursive_directory_iterator(source))
+	{
+		if (p.path().extension() == extension)
+		{
+			FilesMoved++;
+		}
+	}
+	return FilesMoved;
+}
 /**
  * Chat function that won't spam you to death. When calling chat,
  * use true for plugin spam, use false for failure messages and
@@ -428,7 +440,7 @@ void MeshDownloadFile(const std::string& url, const std::string& filename, const
 				{
 					DownloadThreads--;
 				}
-				MeshWriteChat(fmt::format("\awDownload of\ag {} \aw complete.", filename), true);
+				MeshWriteChat(fmt::format("\awDownload of\ag {} \awcomplete.", filename), true);
 			}
 			else
 			{
@@ -436,7 +448,7 @@ void MeshDownloadFile(const std::string& url, const std::string& filename, const
 				{
 					DownloadThreads--;
 				}
-				MeshWriteChat(fmt::format("\arError downloading file\aw {} \ar.\n\a-r[\arError Code:\aw {}\a-r]", filename, curl_easy_strerror(result)), false);
+				MeshWriteChat(fmt::format("\arError downloading file\aw {}\ar.\n\a-r[\arError Code:\aw {}\a-r]", filename, curl_easy_strerror(result)), false);
 			}
 			curl_easy_cleanup(curl);
 			fclose(fp);
@@ -1138,7 +1150,7 @@ void MeshManagerUpdateAll(const char* Param2, const char* Param3) {
 				{
 					// If file exists look up its hash and pass it to the hashing thread.
 					tmp2.HashType = "md5";
-					tmp2.FilePath = tp.string();
+					tmp2.FilePath = NavPath.string();
 					tmp2.FileName = zn + ".navmesh";
 					tmp2.FileUrl = MeshDatabase[zn]["link"];
 					tmp2.RemoteHash = MeshDatabase[zn]["hash"];
