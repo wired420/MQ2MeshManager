@@ -40,14 +40,13 @@
 
 // MQ Stuff
 #include <mq/Plugin.h>
-#include "Prototypes.h"
 #include <imgui/fonts/IconsFontAwesome.h>
 
 using json = nlohmann::json;
 namespace fs = std::filesystem;
 
 PreSetup("MQ2MeshManager");
-PLUGIN_VERSION(2.0);
+PLUGIN_VERSION(2.1);
 
 /**
  * GLOBALS
@@ -55,7 +54,7 @@ PLUGIN_VERSION(2.0);
  * Avoid Globals if at all possible, since they persist throughout your program.
  * But if you must have them, here is the place to put them.
  */
-static const std::string MeshPluginVersion = "2.0";
+static const std::string MeshPluginVersion = "2.1";
 bool fAgree = false;
 static std::chrono::steady_clock::time_point PulseTimer = std::chrono::steady_clock::now();
 static std::chrono::steady_clock::time_point DownloadThreadTimer = std::chrono::steady_clock::now();
@@ -127,6 +126,36 @@ struct ProgressMeter {
 	std::string FileUrl;
 	std::string FileName;
 };
+
+/**
+ * PROTOTYPES - So we can call these functions in any order without 
+ *              playing jigsaw puzzle with our code.
+ */
+void MeshLoadDatabase();
+void MeshWriteChat(const std::string& msg, bool AntiSpam);
+void MeshManager(SPAWNINFO* pChar, char* szLine);
+void MeshDownloadFile(const std::string& url, const std::string& filename, const std::string& savepath, bool single);
+void MeshManagerMenu(const std::string& menu);
+void MeshUpdateDatabase();
+void MeshManagerDisplayHashes(const char* Param2);
+void MeshManagerUpdateZone(const char* Param2);
+void MeshManagerUpdateAll(const char* Param2, const char* Param3);
+void MeshManagerSaveSettings();
+void MeshManagerLoadSettings();
+void MeshManagerSaveIgnores();
+void MeshManagerLoadIgnores();
+void MeshManagerIgnore(const std::string& Param2, const std::string& Param3);
+void Get_Hash_For_Update(const struct HashListStorage& tmp);
+bool move_single_file(std::filesystem::path& source, std::filesystem::path& destination);
+int move_multiple_files(std::filesystem::path source, std::filesystem::path destination, std::vector<std::string> extensions, std::vector<std::string> excludes);
+int number_of_files_in_directory(std::filesystem::path path, std::vector<std::string> extension);
+std::string Get_Hash(const fs::path& p, const std::string& h);
+std::string MD5(const std::string& data);
+std::string SHA256(const std::string& data);
+bool InGameAndSpawned();
+bool ValidateZoneShortName(const std::string& shortname);
+struct DownloadListStorage;
+struct HashListStorage;
 
 /**
  * HELPER FUNCTIONS - vcpkg install cryptopp
@@ -257,10 +286,10 @@ bool ValidateZoneShortName(const std::string& shortname)
 	return false;
 }
 
-int number_of_files_in_directory(std::filesystem::path path, std::vector<std::string> extension)
+int number_of_files_in_directory(fs::path path, std::vector<std::string> extension)
 {
 	unsigned int count = 0;
-	for (auto& p : fs::recursive_directory_iterator(path))
+	for (auto& p : fs::recursive_directory_iterator(path, ec))
 	{
 		for (auto& e : extension) 
 		{
@@ -274,10 +303,10 @@ int number_of_files_in_directory(std::filesystem::path path, std::vector<std::st
 }
 
 // Migration function. Used to quickly move files from Resources to Config.
-int move_multiple_files(std::filesystem::path source, std::filesystem::path destination, std::vector<std::string> extensions, std::vector<std::string> excludes)
+int move_multiple_files(fs::path source, fs::path destination, std::vector<std::string> extensions, std::vector<std::string> excludes)
 {
 	unsigned int count = 0;
-	for (auto& p : fs::recursive_directory_iterator(source))
+	for (auto& p : fs::recursive_directory_iterator(source, ec))
 	{
 		for (auto& e : extensions)
 		{
@@ -287,7 +316,7 @@ int move_multiple_files(std::filesystem::path source, std::filesystem::path dest
 				{
 					if (p.path().filename() != x)
 					{
-						bool filemoved = move_single_file(fs::path(p.path()), fs::path(destination) / p.path().filename());
+						bool filemoved = move_single_file(fs::path(p.path()), destination / p.path().filename());
 						if (filemoved)
 						{
 							count++;
@@ -304,7 +333,7 @@ int move_multiple_files(std::filesystem::path source, std::filesystem::path dest
 	return count;
 }
 
-bool move_single_file(std::filesystem::path& source, std::filesystem::path& destination)
+bool move_single_file(fs::path& source, fs::path& destination)
 {
 	return MoveFileEx(source.string().c_str(), destination.string().c_str(), MOVEFILE_COPY_ALLOWED | MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH);
 }
@@ -573,7 +602,7 @@ bool DataMeshManager(const char* Index, MQTypeVar& Dest)
 void MeshManagerSaveSettings()
 {
 	const std::string FileName = fmt::format("{}_{}.json", pEverQuestInfo->WorldServerShortname, pLocalPC->Name);
-	const fs::path f = fs::path(ConfPath) / FileName;
+	const fs::path f = ConfPath / FileName;
 	FILE* jFile;
 	json tmp;
 	auto& settings = tmp["Settings"];
@@ -600,7 +629,7 @@ void MeshManagerSaveSettings()
 void MeshManagerLoadSettings()
 {
 	const std::string FileName = fmt::format("{}_{}.json", pEverQuestInfo->WorldServerShortname, pLocalPC->Name);
-	const fs::path f = fs::path(ConfPath) / FileName;
+	const fs::path f = ConfPath / FileName;
 	FILE* jFile;
 
 	if (!fs::exists(f, ec))
@@ -648,7 +677,7 @@ void MeshManagerLoadSettings()
  */
 void MeshManagerSaveIgnores()
 {
-	const fs::path p = fs::path(ConfPath) / "ZoneIgnores.json";
+	const fs::path p = ConfPath / "ZoneIgnores.json";
 	FILE* jFile;
 	json tmp;
 	std::string dummyobjline = "DO NOT DELETE DUMMY OBJECT";
@@ -687,7 +716,7 @@ void MeshManagerSaveIgnores()
 
 void MeshManagerLoadIgnores()
 {
-	const fs::path p = fs::path(ConfPath) / "ZoneIgnores.json";
+	const fs::path p = ConfPath / "ZoneIgnores.json";
 	FILE* jFile;
 
 	if (!fs::exists(p, ec))
@@ -823,7 +852,7 @@ void MeshManagerIgnore(const std::string& Param2, const std::string& Param3)
 
 void MeshManagerConfirmAgreement()
 {
-	fs::path fp = fs::path(ConfPath) / "confirmed.txt";
+	fs::path fp = ConfPath / "confirmed.txt";
 	if (!fs::exists(fp, ec))
 	{
 		std::ofstream output(fp);
@@ -1164,7 +1193,7 @@ void MeshManagerUpdateAll(const char* Param2, const char* Param3) {
 			for (int i = 0; i <= MaxZone - 1; i++)
 			{
 				zn = Zones[i];
-				fs::path tp = fs::path(NavPath) / fmt::format("{}{}", zn, ".navmesh");
+				fs::path tp = NavPath / fmt::format("{}{}", zn, ".navmesh");
 				//File doesn't exist? Go ahead and add it to the download list.
 				if (!fs::exists(tp, ec)) {
 					tmp.FileName = zn + ".navmesh";
@@ -1210,7 +1239,7 @@ void MeshManagerDisplayHashes(const char* Param2)
 		if (currentZoneID != -1)
 		{
 			fn = std::string(GetShortZone(currentZoneID)) + ".navmesh";
-			hPath = fs::path(NavPath) / fn;
+			hPath = NavPath / fn;
 		}
 		else
 		{
@@ -1221,8 +1250,8 @@ void MeshManagerDisplayHashes(const char* Param2)
 	// /mesh hash [zoneshortname]
 	else
 	{
-		fn = std::string(Param2) + ".navmesh";
-		hPath = fs::path(gPathResources) / "MQ2Nav" / fn;
+		fn = fmt::format("{}{}", Param2, ".navmesh");
+		hPath = NavPath / fn;
 	}
 
 	if (fs::exists(hPath, ec))
@@ -1255,8 +1284,8 @@ void MeshManagerUpdateZone(const char* Param2)
 
 		if (currentZoneID != -1)
 		{
-			fn = std::string(GetShortZone(currentZoneID)) + ".navmesh";
-			fPath = fs::path(NavPath) / fn;
+			fn = fmt::format("{}{}", GetShortZone(currentZoneID), ".navmesh");
+			fPath = NavPath / fn;
 
 			if (!fs::exists(fPath, ec))
 			{
@@ -1348,7 +1377,7 @@ void MeshManagerMenu(const std::string& menu = "help")
 	if (menu == "ignorelist")
 	{
 		int cnt = 0;
-		const fs::path p = fs::path(ResPath) / "ZoneIgnores.json";
+		const fs::path p = ResPath / "ZoneIgnores.json";
 		MeshWriteChat("\a-t-----------\aw Ignores\a-t ------------", false);
 		if (!fs::exists(p, ec) || fs::is_empty(p, ec))
 		{
@@ -1538,7 +1567,7 @@ PLUGIN_API void SetGameState(int GameState)
 			MeshManagerLoadIgnores();
 			MeshLoadDatabase();
 
-			fs::path fPath = fs::path(ConfPath) / "confirmed.txt";
+			fs::path fPath = ConfPath / "confirmed.txt";
 			if (!fs::exists(fPath, ec))
 			{
 				MeshWriteChat("\arYou have not yet accepted the user agreement. Please type \aw/mesh agree\ar for more information.", true);
@@ -1575,8 +1604,7 @@ PLUGIN_API void OnPulse() {
 		if (std::chrono::steady_clock::now() > PulseTimer)
 		{
 			PulseTimer = std::chrono::steady_clock::now() + std::chrono::seconds(30);
-			fs::path meshRes = fs::path(ConfPath) / "confirmed.txt";
-			if (fs::exists(meshRes, ec))
+			if (fs::exists(ConfPath / "confirmed.txt", ec))
 			{
 				MeshWriteChat("\agPlugin activated!", true);
 				fAgree = true;
@@ -1691,7 +1719,7 @@ PLUGIN_API void OnZoned()
 		std::string search = fn.substr(0, fn.length() - 8);
 		bool found = (std::find(IgnoreList.begin(), IgnoreList.end(), search) != IgnoreList.end());
 		if (!found) {
-			fs::path p = fs::path(NavPath) / fn;
+			fs::path p = NavPath / fn;
 			if (!fs::exists(p, ec))
 			{
 				std::string cmd = "/mesh updatezone " + std::string(GetShortZone(pLocalPC->zoneId));
