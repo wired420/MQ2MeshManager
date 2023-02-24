@@ -437,7 +437,7 @@ void MeshDownloadFile(const std::string& url, const std::string& filename, const
 	FILE* fp;
 	CURLcode result;
 	const std::string FinalPath = fmt::format("{}\\{}", savepath, filename);
-
+	const std::string _TmpPath = fmt::format("{}\\{}", TmpPath.string(), filename);
 	// Update TLOs
 	fCurrentDL = filename;
 	fPathDL = FinalPath;
@@ -451,7 +451,7 @@ void MeshDownloadFile(const std::string& url, const std::string& filename, const
 		pm.FileUrl = url;
 		pm.Thread = std::to_string(DownloadThreads);
 
-		errno_t fw = fopen_s(&fp, FinalPath.c_str(), "wb");
+		errno_t fw = fopen_s(&fp, _TmpPath.c_str(), "wb");
 		// 13 = File locked for write access (Another client already has it)
 		if (fw != 0 && fw != 13)
 		{
@@ -508,9 +508,13 @@ void MeshDownloadFile(const std::string& url, const std::string& filename, const
 			fclose(fp);
 
 			// Reload Database after we download it
-			if (!filename.empty() && filename == "meshdb.json")
+			// Move tmp files to their final resting location after successful download.
+			if (!filename.empty()) 
 			{
-				MeshLoadDatabase();
+				if (filename == "meshdb.json")
+					MeshLoadDatabase();
+				else if (filename.substr(filename.length() - 8, filename.length()) == ".navmesh")
+					move_single_file(fs::path(_TmpPath), fs::path(FinalPath));
 			}
 			// Update TLOS
 			fLastDL = (!filename.empty()) ? filename : "none";
