@@ -257,33 +257,58 @@ bool ValidateZoneShortName(const std::string& shortname)
 	return false;
 }
 
-std::size_t number_of_files_in_directory(std::filesystem::path& path)
+unsigned int number_of_files_in_directory(std::filesystem::path& path, std::vector<std::string>& extension)
 {
-	int count = 0;
-	std::string extension(".navmesh");
+	unsigned int count = 0;
 	for (auto& p : fs::recursive_directory_iterator(path))
 	{
-		if (p.path().extension() == extension)
+		for (auto& e : extension) 
 		{
-			count++;
+			if (p.path().extension() == e)
+			{
+				count++;
+			}
 		}
 	}
-	return (std::size_t)count;
-	//return (std::size_t)std::distance(std::filesystem::directory_iterator{ path }, std::filesystem::directory_iterator{});
+	return count;
 }
 
-int move_files_in_directory(std::filesystem::path& source, std::filesystem::path& destination, std::string& extension)
+// Migration function. Used to quickly move files from Resources to Config.
+unsigned int move_multiple_files(std::filesystem::path& source, std::filesystem::path& destination, std::vector<std::string>& extensions, std::vector<std::string>& excludes)
 {
-	int FilesMoved = 0;
+	unsigned int count = 0;
 	for (auto& p : fs::recursive_directory_iterator(source))
 	{
-		if (p.path().extension() == extension)
+		for (auto& e : extensions)
 		{
-			FilesMoved++;
+			if (p.path().extension() == e)
+			{
+				for (auto& x : excludes)
+				{
+					if (p.path().filename() != x)
+					{
+						bool filemoved = move_single_file(fs::path(p.path()), fs::path(destination) / p.path().filename());
+						if (filemoved)
+						{
+							count++;
+						}
+						else
+						{
+							MeshWriteChat(fmt::format("Error Moving File: {}", p.path().filename()), false);
+						}
+					}
+				}
+			}
 		}
 	}
-	return FilesMoved;
+	return count;
 }
+
+bool move_single_file(std::filesystem::path& source, std::filesystem::path& destination)
+{
+	return MoveFileEx(source.string().c_str(), destination.string().c_str(), MOVEFILE_COPY_ALLOWED | MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH);
+}
+
 /**
  * Chat function that won't spam you to death. When calling chat,
  * use true for plugin spam, use false for failure messages and
@@ -548,7 +573,7 @@ bool DataMeshManager(const char* Index, MQTypeVar& Dest)
 void MeshManagerSaveSettings()
 {
 	const std::string FileName = fmt::format("{}_{}.json", pEverQuestInfo->WorldServerShortname, pLocalPC->Name);
-	const fs::path f = fs::path(ResPath) / FileName;
+	const fs::path f = fs::path(ConfPath) / FileName;
 	FILE* jFile;
 	json tmp;
 	auto& settings = tmp["Settings"];
@@ -575,7 +600,7 @@ void MeshManagerSaveSettings()
 void MeshManagerLoadSettings()
 {
 	const std::string FileName = fmt::format("{}_{}.json", pEverQuestInfo->WorldServerShortname, pLocalPC->Name);
-	const fs::path f = fs::path(ResPath) / FileName;
+	const fs::path f = fs::path(ConfPath) / FileName;
 	FILE* jFile;
 
 	if (!fs::exists(f, ec))
@@ -623,7 +648,7 @@ void MeshManagerLoadSettings()
  */
 void MeshManagerSaveIgnores()
 {
-	const fs::path p = fs::path(ResPath) / "ZoneIgnores.json";
+	const fs::path p = fs::path(ConfPath) / "ZoneIgnores.json";
 	FILE* jFile;
 	json tmp;
 	std::string dummyobjline = "DO NOT DELETE DUMMY OBJECT";
@@ -662,7 +687,7 @@ void MeshManagerSaveIgnores()
 
 void MeshManagerLoadIgnores()
 {
-	const fs::path p = fs::path(ResPath) / "ZoneIgnores.json";
+	const fs::path p = fs::path(ConfPath) / "ZoneIgnores.json";
 	FILE* jFile;
 
 	if (!fs::exists(p, ec))
@@ -798,7 +823,7 @@ void MeshManagerIgnore(const std::string& Param2, const std::string& Param3)
 
 void MeshManagerConfirmAgreement()
 {
-	fs::path fp = fs::path(ResPath) / "confirmed.txt";
+	fs::path fp = fs::path(ConfPath) / "confirmed.txt";
 	if (!fs::exists(fp, ec))
 	{
 		std::ofstream output(fp);
@@ -1268,7 +1293,7 @@ void MeshManagerUpdateZone(const char* Param2)
 	{
 		// Param2 is a shortzone argument download it and don't argue with them. Overwrite whats there.
 		if (ValidateZoneShortName(Param2)) {
-			fn = std::string(Param2) + ".navmesh";
+			fn = fmt::format("{}{}", Param2, ".navmesh");
 			MeshWriteChat(fmt::format("{} {}", "\awQueuing file\ag:\ar ", fn), true);
 			tmp.FileName = fn;
 			tmp.FileUrl = baseURL + fn;
@@ -1402,7 +1427,14 @@ void MeshUpdateDatabase() {
   * routine for the plugin.
   */
 PLUGIN_API void InitializePlugin() {
-	/* Our folder */
+	/* Our Config folder */
+	if (!fs::exists(ConfPath, ec))
+	{
+		fs::create_directory(ConfPath, ec);
+
+	}
+
+	/* Our Resource folder */
 	if (!fs::exists(ResPath, ec))
 	{
 		fs::create_directory(ResPath, ec);
@@ -1498,7 +1530,7 @@ PLUGIN_API void SetGameState(int GameState)
 			MeshManagerLoadIgnores();
 			MeshLoadDatabase();
 
-			fs::path fPath = fs::path(ResPath) / "confirmed.txt";
+			fs::path fPath = fs::path(ConfPath) / "confirmed.txt";
 			if (!fs::exists(fPath, ec))
 			{
 				MeshWriteChat("\arYou have not yet accepted the user agreement. Please type \aw/mesh agree\ar for more information.", true);
@@ -1507,7 +1539,7 @@ PLUGIN_API void SetGameState(int GameState)
 			{
 				fAgree = true;
 			}
-			LocalMeshes = static_cast<int>(number_of_files_in_directory(NavPath));
+			LocalMeshes = number_of_files_in_directory(NavPath, std::vector<std::string> { ".navmesh" });
 			_init = true;
 
 			if (AutoCheckForUpdates)
@@ -1535,7 +1567,7 @@ PLUGIN_API void OnPulse() {
 		if (std::chrono::steady_clock::now() > PulseTimer)
 		{
 			PulseTimer = std::chrono::steady_clock::now() + std::chrono::seconds(30);
-			fs::path meshRes = fs::path(ResPath) / "confirmed.txt";
+			fs::path meshRes = fs::path(ConfPath) / "confirmed.txt";
 			if (fs::exists(meshRes, ec))
 			{
 				MeshWriteChat("\agPlugin activated!", true);
@@ -1627,7 +1659,7 @@ PLUGIN_API void OnPulse() {
 			}
 			else
 			{
-				LocalMeshes = static_cast<int>(number_of_files_in_directory(NavPath));
+				LocalMeshes = number_of_files_in_directory(NavPath, std::vector<std::string> { ".navmesh" });
 				fDownloadReady = false;
 			}
 		}
