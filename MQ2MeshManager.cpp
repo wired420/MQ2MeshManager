@@ -1,12 +1,3 @@
-/* This is a test 2*/
-/**
- * TODO LIST (Overall)
- *
- * + MAKE A UI!
- *
- * + Build an ignore list. Meshes you don't want over written. Make it for all characters.
- *
- */
 #define CRYPTOPP_ENABLE_NAMESPACE_WEAK 1
  // MQ2MeshManager.cpp : Defines the entry point for the DLL application.
  //
@@ -80,7 +71,6 @@ std::vector<std::string> IgnoreList;
 bool fDownloadReady = false;
 bool fHashReady = false;
 int HideProgress = 1;
-fs::path navPath = fs::path(gPathResources) / "MQ2Nav";
 int DownloadThreads = 0, MaxDownloadThreads = 4;
 int HashThreads = 0, MaxHashThreads = 4;
 bool ThreadSafe = true;
@@ -96,6 +86,14 @@ json SettingsDatabase = json::array();
 json IgnoreDatabase = json::array();
 int RemoteMeshes = 0, LocalMeshes = 0;
 
+/**
+ * File Paths - We use them enough that we should stop building them over and over
+ */
+fs::path ConfPath = fs::path(gPathConfig) / "MQ2MeshManager";
+fs::path NavPath = fs::path(gPathResources) / "MQ2Nav";
+fs::path ResPath = fs::path(gPathResources) / "MQ2MeshManager";
+fs::path DbPath = fs::path(ResPath) /  "meshdb.json";
+fs::path TmpPath = fs::path(ResPath) / "tmp";
 
 /*
  * UI GLOBALS
@@ -302,15 +300,14 @@ void MeshWriteChat(const std::string& msg, bool AntiSpam)
  */
 void MeshLoadDatabase()
 {
-	const fs::path f = fs::path(gPathResources) / "MQ2MeshManager" / "meshdb.json";
-	if (!fs::exists(f, ec))
+	if (!fs::exists(DbPath, ec))
 	{
 		MeshWriteChat("\arDatabase file does not exist. Use \aw/mesh updatedb\ar first.", false);
 	}
 	else
 	{
 		FILE* jFile;
-		const errno_t err = fopen_s(&jFile, f.string().c_str(), "r");
+		const errno_t err = fopen_s(&jFile, DbPath.string().c_str(), "r");
 		if (err == 0)
 		{
 			MeshDatabase.clear();
@@ -321,7 +318,7 @@ void MeshLoadDatabase()
 			catch (json::parse_error& e)
 			{
 				MeshWriteChat(fmt::format("\arInvalid or empty database file. \a-r[\arError\aw: {}\a-r]", e.what()), false);
-				MeshWriteChat(fmt::format("\arDelete \a-r'\aw{}\a-r'\ar and try \aw/mesh updatedb\ar again.", f.string()), false);
+				MeshWriteChat(fmt::format("\arDelete \a-r'\aw{}\a-r'\ar and try \aw/mesh updatedb\ar again.", DbPath.string()), false);
 			}
 			MeshWriteChat("\agDatabase Initialized.", false);
 			fclose(jFile);
@@ -539,7 +536,7 @@ bool DataMeshManager(const char* Index, MQTypeVar& Dest)
 void MeshManagerSaveSettings()
 {
 	const std::string FileName = fmt::format("{}_{}.json", pEverQuestInfo->WorldServerShortname, pLocalPC->Name);
-	const fs::path f = fs::path(gPathResources) / "MQ2MeshManager" / FileName;
+	const fs::path f = fs::path(ResPath) / FileName;
 	FILE* jFile;
 	json tmp;
 	auto& settings = tmp["Settings"];
@@ -566,7 +563,7 @@ void MeshManagerSaveSettings()
 void MeshManagerLoadSettings()
 {
 	const std::string FileName = fmt::format("{}_{}.json", pEverQuestInfo->WorldServerShortname, pLocalPC->Name);
-	const fs::path f = fs::path(gPathResources) / "MQ2MeshManager" / FileName;
+	const fs::path f = fs::path(ResPath) / FileName;
 	FILE* jFile;
 
 	if (!fs::exists(f, ec))
@@ -614,7 +611,7 @@ void MeshManagerLoadSettings()
  */
 void MeshManagerSaveIgnores()
 {
-	const fs::path p = fs::path(gPathResources) / "MQ2MeshManager" / "ZoneIgnores.json";
+	const fs::path p = fs::path(ResPath) / "ZoneIgnores.json";
 	FILE* jFile;
 	json tmp;
 	std::string dummyobjline = "DO NOT DELETE DUMMY OBJECT";
@@ -653,7 +650,7 @@ void MeshManagerSaveIgnores()
 
 void MeshManagerLoadIgnores()
 {
-	const fs::path p = fs::path(gPathResources) / "MQ2MeshManager" / "ZoneIgnores.json";
+	const fs::path p = fs::path(ResPath) / "ZoneIgnores.json";
 	FILE* jFile;
 
 	if (!fs::exists(p, ec))
@@ -789,7 +786,7 @@ void MeshManagerIgnore(const std::string& Param2, const std::string& Param3)
 
 void MeshManagerConfirmAgreement()
 {
-	fs::path fp = fs::path(gPathResources) / "MQ2MeshManager" / "confirmed.txt";
+	fs::path fp = fs::path(ResPath) / "confirmed.txt";
 	if (!fs::exists(fp, ec))
 	{
 		std::ofstream output(fp);
@@ -1108,7 +1105,7 @@ void MeshManager(SPAWNINFO* pChar, char* szLine)
 void MeshManagerUpdateAll(const char* Param2, const char* Param3) {
 	DownloadListStorage tmp;
 	HashListStorage tmp2;
-	std::string mn, zn, md5, fmd5, url;
+	std::string zn;
 
 	if (!fDownloadReady)
 	{
@@ -1130,7 +1127,7 @@ void MeshManagerUpdateAll(const char* Param2, const char* Param3) {
 			for (int i = 0; i <= MaxZone - 1; i++)
 			{
 				zn = Zones[i];
-				fs::path tp = fs::path(gPathResources) / "MQ2Nav" / mn;
+				fs::path tp = fs::path(NavPath) / fmt::format("{}{}", zn, ".navmesh");
 				//File doesn't exist? Go ahead and add it to the download list.
 				if (!fs::exists(tp, ec)) {
 					tmp.FileName = zn + ".navmesh";
@@ -1176,7 +1173,7 @@ void MeshManagerDisplayHashes(const char* Param2)
 		if (currentZoneID != -1)
 		{
 			fn = std::string(GetShortZone(currentZoneID)) + ".navmesh";
-			hPath = fs::path(gPathResources) / "MQ2Nav" / fn;
+			hPath = fs::path(NavPath) / fn;
 		}
 		else
 		{
@@ -1222,21 +1219,21 @@ void MeshManagerUpdateZone(const char* Param2)
 		if (currentZoneID != -1)
 		{
 			fn = std::string(GetShortZone(currentZoneID)) + ".navmesh";
-			fPath = fs::path(gPathResources) / "MQ2Nav";
+			fPath = fs::path(NavPath) / fn;
 
 			if (!fs::exists(fPath, ec))
 			{
 				//no file exists? Just download it!
 				MeshWriteChat("\awQueuing file\ag:\ar " + fn, true);
 				tmp.FileName = fn;
-				tmp.FileUrl = baseURL + fn;
+				tmp.FileUrl = fmt::format("{}{}", baseURL, fn);
 				DownloadList.push_back(tmp);
 				fDownloadReady = true;
 			}
 			else
 			{
 				std::string dHash = MeshDatabase[std::string(GetShortZone(currentZoneID))]["hash"];
-				std::string fHash = Get_Hash(fPath.string() + "\\" + fn);
+				std::string fHash = Get_Hash(fPath.string());
 
 				MeshWriteChat(fmt::format("\awYou currently have a copy of\ar {}", fn), false);
 				int upd = dHash.compare(fHash);
@@ -1258,14 +1255,18 @@ void MeshManagerUpdateZone(const char* Param2)
 	else
 	{
 		// Param2 is a shortzone argument download it and don't argue with them. Overwrite whats there.
-		fn = std::string(Param2) + ".navmesh";
-		fPath = fs::path(gPathResources) / "MQ2Nav";
-
-		MeshWriteChat(fmt::format("{} {}", "\awQueuing file\ag:\ar ", fn), true);
-		tmp.FileName = fn;
-		tmp.FileUrl = baseURL + fn;
-		DownloadList.push_back(tmp);
-		fDownloadReady = true;
+		if (ValidateZoneShortName(Param2)) {
+			fn = std::string(Param2) + ".navmesh";
+			MeshWriteChat(fmt::format("{} {}", "\awQueuing file\ag:\ar ", fn), true);
+			tmp.FileName = fn;
+			tmp.FileUrl = baseURL + fn;
+			DownloadList.push_back(tmp);
+			fDownloadReady = true;
+		}
+		else 
+		{
+			MeshWriteChat("\arInvalid short zone name. Please check your spelling and try again.", false);
+		}
 	}
 }
 
@@ -1310,7 +1311,7 @@ void MeshManagerMenu(const std::string& menu = "help")
 	if (menu == "ignorelist")
 	{
 		int cnt = 0;
-		const fs::path p = fs::path(gPathResources) / "MQ2MeshManager" / "ZoneIgnores.json";
+		const fs::path p = fs::path(ResPath) / "ZoneIgnores.json";
 		MeshWriteChat("\a-t-----------\aw Ignores\a-t ------------", false);
 		if (!fs::exists(p, ec) || fs::is_empty(p, ec))
 		{
@@ -1367,10 +1368,8 @@ void MeshManagerMenu(const std::string& menu = "help")
 void MeshUpdateDatabase() {
 	const std::string dbURL = "https://mqmesh.com/meshdb.json";
 	const std::string fName = "meshdb.json";
-	fs::path meshRes = fs::path(gPathResources) / "MQ2MeshManager";
-
 	MeshWriteChat("Requesting database update:", true);
-	MeshDownloadFile(dbURL, fName, meshRes.string(), true);
+	MeshDownloadFile(dbURL, fName, ResPath.string(), true);
 }
 
 /**
@@ -1391,21 +1390,23 @@ void MeshUpdateDatabase() {
   * routine for the plugin.
   */
 PLUGIN_API void InitializePlugin() {
-	char fMsg[256] = { 0 };
-	fs::path fPath;
-
 	/* Our folder */
-	fPath = fs::path(gPathResources) / "MQ2MeshManager";
-	if (!fs::exists(fPath, ec))
+	if (!fs::exists(ResPath, ec))
 	{
-		fs::create_directory(fPath, ec);
+		fs::create_directory(ResPath, ec);
+
+	}
+
+	/* Our Temp Download Folder */
+	if (!fs::exists(TmpPath, ec))
+	{
+		fs::create_directory(TmpPath, ec);
 	}
 
 	/* Nav's Folder. If it's not there. Make it too and assume they'll load nav later. */
-	fPath = fs::path(gPathResources) / "MQ2Nav";
-	if (!fs::exists(fPath, ec))
+	if (!fs::exists(NavPath, ec))
 	{
-		fs::create_directory(fPath, ec);
+		fs::create_directory(NavPath, ec);
 	}
 
 	AddCommand("/mesh", MeshManager);
@@ -1485,7 +1486,7 @@ PLUGIN_API void SetGameState(int GameState)
 			MeshManagerLoadIgnores();
 			MeshLoadDatabase();
 
-			fs::path fPath = fs::path(gPathResources) / "MQ2MeshManager" / "confirmed.txt";
+			fs::path fPath = fs::path(ResPath) / "confirmed.txt";
 			if (!fs::exists(fPath, ec))
 			{
 				MeshWriteChat("\arYou have not yet accepted the user agreement. Please type \aw/mesh agree\ar for more information.", true);
@@ -1494,7 +1495,7 @@ PLUGIN_API void SetGameState(int GameState)
 			{
 				fAgree = true;
 			}
-			LocalMeshes = static_cast<int>(number_of_files_in_directory(navPath));
+			LocalMeshes = static_cast<int>(number_of_files_in_directory(NavPath));
 			_init = true;
 
 			if (AutoCheckForUpdates)
@@ -1522,7 +1523,7 @@ PLUGIN_API void OnPulse() {
 		if (std::chrono::steady_clock::now() > PulseTimer)
 		{
 			PulseTimer = std::chrono::steady_clock::now() + std::chrono::seconds(30);
-			fs::path meshRes = fs::path(gPathResources) / "MQ2MeshManager" / "confirmed.txt";
+			fs::path meshRes = fs::path(ResPath) / "confirmed.txt";
 			if (fs::exists(meshRes, ec))
 			{
 				MeshWriteChat("\agPlugin activated!", true);
@@ -1608,13 +1609,13 @@ PLUGIN_API void OnPulse() {
 						return;
 					}
 					DownloadThreads++;
-					std::thread download_obj(MeshDownloadFile, tmp.FileUrl, tmp.FileName, navPath.string(), single);
+					std::thread download_obj(MeshDownloadFile, tmp.FileUrl, tmp.FileName, NavPath.string(), single);
 					download_obj.detach();
 				}
 			}
 			else
 			{
-				LocalMeshes = static_cast<int>(number_of_files_in_directory(navPath));
+				LocalMeshes = static_cast<int>(number_of_files_in_directory(NavPath));
 				fDownloadReady = false;
 			}
 		}
@@ -1638,7 +1639,7 @@ PLUGIN_API void OnZoned()
 		std::string search = fn.substr(0, fn.length() - 8);
 		bool found = (std::find(IgnoreList.begin(), IgnoreList.end(), search) != IgnoreList.end());
 		if (!found) {
-			fs::path p = fs::path(gPathResources) / "MQ2Nav" / fn;
+			fs::path p = fs::path(NavPath) / fn;
 			if (!fs::exists(p, ec))
 			{
 				std::string cmd = "/mesh updatezone " + std::string(GetShortZone(pLocalPC->zoneId));
