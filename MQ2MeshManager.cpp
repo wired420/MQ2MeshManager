@@ -76,7 +76,7 @@ void MeshManagerSaveIgnores();
 void MeshManagerLoadIgnores();
 void MeshManagerIgnore(const std::string& Param2, const std::string& Param3);
 void Get_Hash_For_Update(const struct HashListStorage& tmp);
-void move_single_file(std::filesystem::path& source, std::filesystem::path& destination);
+bool move_single_file(std::filesystem::path& source, std::filesystem::path& destination);
 int move_multiple_files(std::filesystem::path source, std::filesystem::path destination, std::vector<std::string> extensions, std::vector<std::string> excludes);
 int number_of_files_in_directory(std::filesystem::path path, std::vector<std::string> extension);
 std::string Get_Hash(const fs::path& p, const std::string& h);
@@ -86,7 +86,6 @@ bool InGameAndSpawned();
 bool ValidateZoneShortName(const std::string& shortname);
 struct DownloadListStorage;
 struct HashListStorage;
-size_t strerrorlen_s(errno_t errnum);
 
 /**
  * GLOBALS
@@ -326,15 +325,11 @@ int move_multiple_files(fs::path source, fs::path destination, std::vector<std::
 				{
 					if (p.path().filename() != x)
 					{
-						try
-						{
-							move_single_file(fs::path(p.path()), destination / p.path().filename());
+
+						if (move_single_file(fs::path(p.path()), destination / p.path().filename()))
 							count++;
-						}
-						catch (const std::runtime_error& e)
-						{
-							MeshWriteChat(fmt::format("Error moving file {} [Error: {}]", p.path().filename().string(), e.what()), false);
-						}
+						else
+							MeshWriteChat(fmt::format("Error moving file: {}", p.path().filename().string()), false);
 					}
 				}
 			}
@@ -343,9 +338,11 @@ int move_multiple_files(fs::path source, fs::path destination, std::vector<std::
 	return count;
 }
 
-void move_single_file(fs::path& source, fs::path& destination)
+bool move_single_file(fs::path& source, fs::path& destination)
 {
-	fs::rename(source, destination, ec);
+	std::error_code err;
+	fs::rename(source, destination, err);
+	return !err;
 }
 
 /**
@@ -523,26 +520,16 @@ void MeshDownloadFile(const std::string& url, const std::string& filename, const
 			{
 				if (filename == "meshdb.json")
 				{
-					try 
-					{
-						move_single_file(fs::path(_TmpPath), fs::path(FinalPath));
-						MeshLoadDatabase();
-					}
-					catch (const std::runtime_error& e)
-					{
-						MeshWriteChat(fmt::format("Error moving file {} [Error: {}]", filename, e.what()), false);
-					}
+						if (move_single_file(fs::path(_TmpPath), fs::path(FinalPath)))
+							MeshLoadDatabase();
+						else
+							MeshWriteChat(fmt::format("Error moving file: {}", filename), false);
 				}
 				else if (filename.substr(filename.length() - 8, filename.length()) == ".navmesh")
 				{
-					try
-					{
-						move_single_file(fs::path(_TmpPath), fs::path(FinalPath));
-					}
-					catch (const std::runtime_error& e)
-					{
-						MeshWriteChat(fmt::format("Error moving file {} [Error: {}]", filename, e.what()), false);
-					}
+					if (!move_single_file(fs::path(_TmpPath), fs::path(FinalPath)))
+						MeshWriteChat(fmt::format("Error moving file {}", filename), false);
+
 				}
 			}
 			// Update TLOS
