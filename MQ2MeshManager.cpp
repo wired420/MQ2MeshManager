@@ -76,7 +76,7 @@ void MeshManagerSaveIgnores();
 void MeshManagerLoadIgnores();
 void MeshManagerIgnore(const std::string& Param2, const std::string& Param3);
 void Get_Hash_For_Update(const struct HashListStorage& tmp);
-bool move_single_file(std::filesystem::path& source, std::filesystem::path& destination);
+void move_single_file(std::filesystem::path& source, std::filesystem::path& destination);
 int move_multiple_files(std::filesystem::path source, std::filesystem::path destination, std::vector<std::string> extensions, std::vector<std::string> excludes);
 int number_of_files_in_directory(std::filesystem::path path, std::vector<std::string> extension);
 std::string Get_Hash(const fs::path& p, const std::string& h);
@@ -86,6 +86,7 @@ bool InGameAndSpawned();
 bool ValidateZoneShortName(const std::string& shortname);
 struct DownloadListStorage;
 struct HashListStorage;
+size_t strerrorlen_s(errno_t errnum);
 
 /**
  * GLOBALS
@@ -212,7 +213,10 @@ void Get_Hash_For_Update(const struct HashListStorage& tmp)
 		}
 		catch (CryptoPP::FileStore::OpenErr const&)
 		{
-			MeshWriteChat(fmt::format("\arHashing Error:\aw {}", strerror(errno)), false);
+			size_t errmsglen = strerrorlen_s(errno) + 1;
+			char* errmsg = nullptr;
+			strerror_s(errmsg, errmsglen, errno);
+			MeshWriteChat(fmt::format("\arHashing Error:\aw {}", errmsg), false);
 		}
 
 		if (tmp.HashType == "md5")
@@ -325,14 +329,14 @@ int move_multiple_files(fs::path source, fs::path destination, std::vector<std::
 				{
 					if (p.path().filename() != x)
 					{
-						bool filemoved = move_single_file(fs::path(p.path()), destination / p.path().filename());
-						if (filemoved)
+						try
 						{
+							move_single_file(fs::path(p.path()), destination / p.path().filename());
 							count++;
 						}
-						else
+						catch (const std::runtime_error& e)
 						{
-							MeshWriteChat(fmt::format("Error Moving File: {}", p.path().filename().string()), false);
+							MeshWriteChat(fmt::format("Error moving file {} [Error: {}]", p.path().filename().string(), e.what()), false);
 						}
 					}
 				}
@@ -342,9 +346,9 @@ int move_multiple_files(fs::path source, fs::path destination, std::vector<std::
 	return count;
 }
 
-bool move_single_file(fs::path& source, fs::path& destination)
+void move_single_file(fs::path& source, fs::path& destination)
 {
-	return MoveFileEx(source.string().c_str(), destination.string().c_str(), MOVEFILE_COPY_ALLOWED | MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH);
+	fs::rename(source, destination, ec);
 }
 
 /**
@@ -521,12 +525,28 @@ void MeshDownloadFile(const std::string& url, const std::string& filename, const
 			if (!filename.empty()) 
 			{
 				if (filename == "meshdb.json")
-					if (move_single_file(fs::path(_TmpPath), fs::path(FinalPath)))
+				{
+					try 
+					{
+						move_single_file(fs::path(_TmpPath), fs::path(FinalPath));
 						MeshLoadDatabase();
-					else
-						MeshWriteChat("Error downloading new database file. Please try again.", false);
+					}
+					catch (const std::runtime_error& e)
+					{
+						MeshWriteChat(fmt::format("Error moving file {} [Error: {}]", filename, e.what()), false);
+					}
+				}
 				else if (filename.substr(filename.length() - 8, filename.length()) == ".navmesh")
-					move_single_file(fs::path(_TmpPath), fs::path(FinalPath));
+				{
+					try
+					{
+						move_single_file(fs::path(_TmpPath), fs::path(FinalPath));
+					}
+					catch (const std::runtime_error& e)
+					{
+						MeshWriteChat(fmt::format("Error moving file {} [Error: {}]", filename, e.what()), false);
+					}
+				}
 			}
 			// Update TLOS
 			fLastDL = (!filename.empty()) ? filename : "none";
@@ -1925,3 +1945,70 @@ PLUGIN_API void OnUpdateImGui()
 	}
 }
 
+// Safe C Library
+// 
+// Copyright (C) 2012, 2013 Cisco Systems
+// Copyright (C) 2017 Reini Urban
+// All rights reserved.
+// 
+// Permission is hereby granted, free of charge, to any person
+// obtaining a copy of this software and associated documentation
+// files (the "Software"), to deal in the Software without
+// restriction, including without limitation the rights to use,
+// copy, modify, merge, publish, distribute, sublicense, and/or
+// sell copies of the Software, and to permit persons to whom the
+// Software is furnished to do so, subject to the following
+// conditions:
+// 
+// The above copyright notice and this permission notice shall be
+// included in all copies or substantial portions of the Software.
+// 
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+// EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+// OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+// NONINFRINGEMENT.  IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+// HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+// WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+// OTHER DEALINGS IN THE SOFTWARE.
+
+size_t strerrorlen_s(errno_t errnum)
+{
+#ifndef ESNULLP
+#define ESNULLP         ( 400 )       /* null ptr                    */
+#endif
+
+#ifndef ESLEWRNG
+#define ESLEWRNG        ( 410 )       /* wrong size                */
+#endif
+
+#ifndef ESLAST
+#define ESLAST ESLEWRNG
+#endif
+
+	static const int len_errmsgs_s[] = {
+	  sizeof "null ptr",               /* ESNULLP */
+	  sizeof "length is zero",         /* ESZEROL */
+	  sizeof "length is below min",    /* ESLEMIN */
+	  sizeof "length exceeds RSIZE_MAX",/* ESLEMAX */
+	  sizeof "overlap undefined",      /* ESOVRLP */
+	  sizeof "empty string",           /* ESEMPTY */
+	  sizeof "not enough space",       /* ESNOSPC */
+	  sizeof "unterminated string",    /* ESUNTERM */
+	  sizeof "no difference",          /* ESNODIFF */
+	  sizeof "not found",              /* ESNOTFND */
+	  sizeof "wrong size",             /* ESLEWRNG */
+	};
+
+	if (errnum >= ESNULLP && errnum <= ESLAST)
+	{
+		return len_errmsgs_s[errnum - ESNULLP] - 1;
+	}
+	else
+	{
+		size_t errmsglen = strerrorlen_s(errnum) + 1;
+		char* errmsg = nullptr;
+		strerror_s(errmsg, errmsglen, errnum);
+		return errmsg ? strlen(errmsg) : 0;
+	}
+}
