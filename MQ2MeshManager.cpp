@@ -76,8 +76,9 @@ void MeshManagerSaveIgnores();
 void MeshManagerLoadIgnores();
 void MeshManagerIgnore(const std::string& Param2, const std::string& Param3);
 void Get_Hash_For_Update(const struct HashListStorage& tmp);
-bool move_single_file(std::filesystem::path& source, std::filesystem::path& destination);
-int move_multiple_files(std::filesystem::path source, std::filesystem::path destination, std::vector<std::string> extensions, std::vector<std::string> excludes);
+bool move_single_file(const std::filesystem::path& source, const std::filesystem::path& destination);
+int move_multiple_files(const std::filesystem::path& source, const std::filesystem::path& destination, 
+	const std::vector<std::string>& extensions, const std::vector<std::string>& excludes);
 int number_of_files_in_directory(std::filesystem::path path, std::vector<std::string> extension);
 std::string Get_Hash(const fs::path& p, const std::string& h);
 std::string MD5(const std::string& data);
@@ -312,7 +313,7 @@ int number_of_files_in_directory(fs::path path, std::vector<std::string> extensi
 }
 
 // Migration function. Used to quickly move files from Resources to Config.
-int move_multiple_files(fs::path source, fs::path destination, std::vector<std::string> extensions, std::vector<std::string> excludes)
+int move_multiple_files(const fs::path& source, const fs::path& destination, const std::vector<std::string>& extensions, const std::vector<std::string>& excludes)
 {
 	unsigned int count = 0;
 	for (auto& p : fs::recursive_directory_iterator(source, ec))
@@ -325,8 +326,7 @@ int move_multiple_files(fs::path source, fs::path destination, std::vector<std::
 				{
 					if (p.path().filename() != x)
 					{
-
-						if (move_single_file(fs::path(p.path()), destination / p.path().filename()))
+						if (move_single_file(p.path(), destination / p.path().filename()))
 							count++;
 						else
 							MeshWriteChat(fmt::format("Error moving file: {}", p.path().filename().string()), false);
@@ -338,11 +338,11 @@ int move_multiple_files(fs::path source, fs::path destination, std::vector<std::
 	return count;
 }
 
-bool move_single_file(fs::path& source, fs::path& destination)
+bool move_single_file(const fs::path& source, const fs::path& destination)
 {
-	std::error_code err;
-	fs::rename(source, destination, err);
-	return !err;
+	ec.clear();
+	fs::rename(source, destination, ec);
+	return !ec;
 }
 
 /**
