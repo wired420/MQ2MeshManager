@@ -329,7 +329,7 @@ int move_multiple_files(const fs::path& source, const fs::path& destination, con
 						if (move_single_file(p.path(), destination / p.path().filename()))
 							count++;
 						else
-							MeshWriteChat(fmt::format("Error moving file: {}", p.path().filename().string()), false);
+							MeshWriteChat(fmt::format("\arError moving file:\aw {} \a-r[\arError:\aw {}\a-r]", p.path().filename().string(), ec.message()), false);
 					}
 				}
 			}
@@ -522,12 +522,12 @@ void MeshDownloadFile(const std::string& url, const std::string& filename, const
 						if (move_single_file(fs::path(_TmpPath), fs::path(FinalPath)))
 							MeshLoadDatabase();
 						else
-							MeshWriteChat(fmt::format("Error moving file: {}", filename), false);
+							MeshWriteChat(fmt::format("\arError moving file:\aw {} \a-r[\arError:\aw {}\a-r]", filename, ec.message()), false);
 				}
 				else if (filename.substr(filename.length() - 8, filename.length()) == ".navmesh")
 				{
 					if (!move_single_file(fs::path(_TmpPath), fs::path(FinalPath)))
-						MeshWriteChat(fmt::format("Error moving file {}", filename), false);
+						MeshWriteChat(fmt::format("\arError moving file:\aw {} \a-r[\arError:\aw {}\a-r]", filename, ec.message()), false);
 
 				}
 			}
