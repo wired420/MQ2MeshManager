@@ -340,7 +340,6 @@ int move_multiple_files(const fs::path& source, const fs::path& destination, con
 
 bool move_single_file(const fs::path& source, const fs::path& destination)
 {
-	ec.clear();
 	fs::rename(source, destination, ec);
 	return !ec;
 }
