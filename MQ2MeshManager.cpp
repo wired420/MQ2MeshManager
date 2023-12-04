@@ -94,7 +94,7 @@ struct HashListStorage;
  * Avoid Globals if at all possible, since they persist throughout your program.
  * But if you must have them, here is the place to put them.
  */
-static const std::string MeshPluginVersion = "2.1";
+static const std::string MeshPluginVersion = "2.2";
 bool fAgree = false;
 static std::chrono::steady_clock::time_point PulseTimer = std::chrono::steady_clock::now();
 static std::chrono::steady_clock::time_point DownloadThreadTimer = std::chrono::steady_clock::now();
