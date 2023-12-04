@@ -1457,17 +1457,6 @@ void MeshUpdateDatabase() {
 	MeshDownloadFile(dbURL, fName, ResPath.string(), true);
 }
 
-/**
- * THREADING
- *
- * To keep from blocking the client we're setting up threads for hashing and
- * downloading. Hopefully this will keep the client from glitching so much
- * during the update processes.
- *
- */
-
-
-
  /**
   * @fn InitializePlugin
   *
