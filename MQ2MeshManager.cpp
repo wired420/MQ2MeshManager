@@ -1831,7 +1831,7 @@ PLUGIN_API void OnUpdateImGui()
 						if (ImGui::BeginTabItem("Ignore"))
 						{
 							ImGui::Text("Select To Remove");
-							if (ImGui::ListBoxHeader("Ignores", ImVec2(0, 0)))
+							if (ImGui::BeginListBox("Ignores", ImVec2(0, 0)))
 							{
 								for (auto &i : IgnoreList)
 								{
@@ -1843,7 +1843,7 @@ PLUGIN_API void OnUpdateImGui()
 										}
 									}
 								}
-								ImGui::ListBoxFooter();
+								ImGui::EndListBox();
 							}
 							ImGui::Separator();
 							ImGui::Text("Select To Add");
