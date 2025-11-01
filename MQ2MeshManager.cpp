@@ -703,7 +703,7 @@ void MeshManagerSaveIgnores()
 
 	if (!IgnoreList.empty())
 	{
-		for (int i = 0; i <= IgnoreList.size() - 1; i++)
+		for (size_t i = 0; i < IgnoreList.size(); i++)
 		{
 			if (IgnoreList[i] == std::to_string(0))
 			{
@@ -1439,14 +1439,13 @@ void MeshManagerMenu(const std::string& menu = "help")
 	}
 	if (menu == "tlos")
 	{
-		char buf[4] = { 0 };
 		std::string tmp = (fDownloading) ? "true" : "false";
 		MeshWriteChat("\a-t---------------\at TLOs \a-t---------------", false);
-		MeshWriteChat(fmt::format("\at${\a-tMeshManager\at.\a-tisDownloading\at}\ag:\aw {}", tmp), false);
-		MeshWriteChat(fmt::format("\at${\a-tMeshManager\at.\a-tDownloadCurrent\at}\ag:\aw {}", fCurrentDL), false);
-		MeshWriteChat(fmt::format("\at${\a-tMeshManager\at.\a-tDownloadLast\at}\ag:\aw {}", fLastDL), false);
-		MeshWriteChat(fmt::format("\at${\a-tMeshManager\at.\a-tDownloadProgress\at}\ag:\aw {}", std::to_string(fProgressDL)), false);
-		MeshWriteChat(fmt::format("\at${\a-tMeshManager\at.\a-tDownloadPath\at}\ag:\aw {}", fPathDL), false);
+		MeshWriteChat(fmt::format("\at${{\a-tMeshManager\at.\a-tisDownloading\at}}\ag:\aw {}", tmp), false);
+		MeshWriteChat(fmt::format("\at${{\a-tMeshManager\at.\a-tDownloadCurrent\at}}\ag:\aw {}", fCurrentDL), false);
+		MeshWriteChat(fmt::format("\at${{\a-tMeshManager\at.\a-tDownloadLast\at}}\ag:\aw {}", fLastDL), false);
+		MeshWriteChat(fmt::format("\at${{\a-tMeshManager\at.\a-tDownloadProgress\at}}\ag:\aw {}", std::to_string(fProgressDL)), false);
+		MeshWriteChat(fmt::format("\at${{\a-tMeshManager\at.\a-tDownloadPath\at}}\ag:\aw {}", fPathDL), false);
 	}
 }
 
