@@ -69,16 +69,16 @@
       <Message>Updating version resource for $(MSBuildProjectName)...</Message>
     </PreBuildEvent>
     <Link>
-      <AdditionalDependencies Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Ws2_32.lib;crypt32.lib;zlib.lib;libcurl.lib;cryptopp.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Ws2_32.lib;crypt32.lib;zlib.lib;libcurl.lib;cryptopp.lib;libcrypto.lib;libssl.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <Link>
-      <AdditionalDependencies Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Ws2_32.lib;crypt32.lib;zlibd.lib;libcurl-d.lib;cryptopp.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Ws2_32.lib;crypt32.lib;zlibd.lib;libcurl-d.lib;cryptopp.lib;libcrypto.lib;libssl.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <Link>
-      <AdditionalDependencies Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Ws2_32.lib;crypt32.lib;zlib.lib;libcurl.lib;cryptopp.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Ws2_32.lib;crypt32.lib;zlib.lib;libcurl.lib;cryptopp.lib;libcrypto.lib;libssl.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <Link>
-      <AdditionalDependencies Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Ws2_32.lib;crypt32.lib;zlibd.lib;libcurl-d.lib;cryptopp.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Ws2_32.lib;crypt32.lib;zlibd.lib;libcurl-d.lib;cryptopp.lib;libcrypto.lib;libssl.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <PropertyGroup>
