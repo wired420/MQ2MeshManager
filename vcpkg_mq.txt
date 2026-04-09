@@ -1,4 +1,4 @@
 cryptopp
-curl[non-http,ssl,openssl,schannel]
+curl[non-http,ssl]
 nlohmann-json
 zlib
