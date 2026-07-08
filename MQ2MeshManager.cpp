@@ -33,6 +33,10 @@
 #include <string.h>
 #include <sys/stat.h>
 
+// MQ Stuff
+#include <mq/Plugin.h>
+#include <imgui/fonts/IconsFontAwesome.h>
+
 // Json Parser
 #include <nlohmann/json.hpp>
 
@@ -45,10 +49,6 @@
 #include <cryptopp/hex.h>
 #include <cryptopp/md5.h>
 #include <cryptopp/sha.h>
-
-// MQ Stuff
-#include <mq/Plugin.h>
-#include <imgui/fonts/IconsFontAwesome.h>
 
 using json = nlohmann::json;
 namespace fs = std::filesystem;
